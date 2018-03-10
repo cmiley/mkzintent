@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from bvh import *
 import time
+import os
 
 
 '''#######################################################
@@ -80,15 +81,22 @@ def adjust_learning_rate(optimizer, epoch):
 
 def main():
     file_path_list = []
-    for i in range(11):
-        file_path_list.append("bvh_testdata/bvh_conversion/cmu_bvh/08/08_" + str(i+1).zfill(2) + ".bvh")
+    # for i in range(5):
+    #     for j in range(7,9):
+    #         file_path_list.append(
+    #             "bvh_testdata/bvh_conversion/cmu_bvh/{}/{}_{}.bvh".format(str(j).zfill(2), str(j).zfill(2), str(i+1).zfill(2))
+    #         )
 
+    for root, dirs, files in os.walk("bvh_testdata/bvh_conversion/cmu_bvh"):
+        for name in files:
+            if name.endswith(".bvh"):
+                file_path_list.append(os.path.join(root, name))
+
+    print("Filenames loaded.")
     m_dataset = BVHDataset(file_path_list)
+    print("Data has been indexed.")
 
-    data_loader = data.DataLoader(dataset=m_dataset, batch_size=200, shuffle=True)
-    # for input_value, output_value in data_loader:
-    #     print(input_value, output_value)
-    #     break
+    data_loader = data.DataLoader(dataset=m_dataset, batch_size=80, shuffle=True, num_workers=6)
 
     loss_history = []
 
@@ -107,7 +115,9 @@ def main():
     criterion = nn.MSELoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 
-    for i in range(10):
+    print("Starting training.")
+    for i in range(3):
+        print("Start of epoch {}".format(i+1))
         start = time.time()
         adjust_learning_rate(optimizer, i+1)
         for input_value, observed_output_value in data_loader:
@@ -123,6 +133,10 @@ def main():
             optimizer.step()
         print("loss:", loss.data[0])
         print("Time for iteration {}".format(time.time() - start))
+
+    model_filename = "model.pkl"
+    print("Saving model to {}".format(model_filename))
+    torch.save(model, model_filename)
 
     plt.figure(1)
     plt.title("Loss")
