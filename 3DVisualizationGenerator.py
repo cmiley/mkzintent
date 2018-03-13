@@ -65,6 +65,7 @@ assert(len(positions) == len(pred_deltas))
 print("Writing to file")
 with open(output_filename, "w+") as f:
     f.write(str(num_frames)+"\n")
+    f.write(bvh_filename + "\n")
     for i in range(len(positions)):
         to_write = list(positions[i]) + list(pred_deltas[i])
         f.write(" ".join(map(str, to_write)))
