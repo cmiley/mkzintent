@@ -72,9 +72,25 @@ def load_whitelist():
         paths.append(line)
     return paths
 
+def evaluate_model_on_dataset(model, criterion, dataset):
+
+    loader = data.DataLoader(dataset=dataset, batch_size=2**12, shuffle=True)
+
+    loss_sum = 0.0
+    num_samples = 0.0
+    for input_value, observed_output_value in loader:
+        input_value = Variable(input_value).float()
+        observed_output_value = Variable(observed_output_value).float()
+
+        pred = model(input_value)
+        loss = criterion(pred, observed_output_value)
+        loss_sum += np.average(loss.data.numpy())
+        num_samples += 1.0
+    return loss_sum/num_samples
+
 def main():
 
-    file_path_list = load_whitelist()
+    file_path_list = load_whitelist()[:50]
     
     # for i in range(1):
     #     for j in range(8,9):
@@ -90,13 +106,19 @@ def main():
     print("Start time: {}".format(datetime.datetime.now()))
     print(str(len(file_path_list)) + " filenames loaded.")
 
-    small_filelist = file_path_list[0 : int(len(file_path_list)*0.9)]
-    m_dataset = BVHDataset(small_filelist)
+
+    split_index = int(len(file_path_list)*0.9)
+    train_filelist = file_path_list[:split_index]
+    test_filelist = file_path_list[split_index:]
+
+    train_dataset = BVHDataset(train_filelist)
+    test_dataset = BVHDataset(test_filelist)
     print("Data has been indexed.")
 
-    data_loader = data.DataLoader(dataset=m_dataset, batch_size=2048, shuffle=True, num_workers=6)
+    train_loader = data.DataLoader(dataset=train_dataset, batch_size=2**12, shuffle=True, num_workers=4)
 
-    loss_history = []
+    train_loss_history = []
+    test_loss_history = []
 
     # Hidden layer size
     h1, h2, h3 = 200, 150, 50
@@ -114,26 +136,29 @@ def main():
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 
     print("Starting training.")
-    log_iteration = 0
-    for i in range(600):
+
+    for i in range(10):
         print("Start of epoch {}".format(i+1))
         start = time.time()
         adjust_learning_rate(optimizer, i+1)
-        for input_value, observed_output_value in data_loader:
-            log_iteration += 1
+        for input_value, observed_output_value in train_loader:
+
             optimizer.zero_grad()
+            
             input_value = Variable(input_value).float()
             observed_output_value = Variable(observed_output_value).float()
-
+            
             pred = model(input_value)
             loss = criterion(pred, observed_output_value)
-            if log_iteration%100 == 0:
-                loss_average = np.average(loss.data.numpy())
-                loss_history.append(loss_average)
-
             loss.backward()
             optimizer.step()
-        print("loss:", loss_average)
+
+        train_loss = evaluate_model_on_dataset(model, criterion, train_dataset)
+        test_loss = evaluate_model_on_dataset(model, criterion, test_dataset)
+        train_loss_history.append(train_loss)
+        test_loss_history.append(test_loss)
+
+        print("Training loss: {}\tTesting loss:{}".format(train_loss, test_loss))
         print("Time for iteration {}".format(time.time() - start))
 
     print("Completed training...")
@@ -142,10 +167,16 @@ def main():
     print("Saving model to {}".format(model_filename))
     torch.save(model, model_filename)
 
+    train_loss = evaluate_model_on_dataset(model, criterion, train_dataset)
+    test_loss = evaluate_model_on_dataset(model, criterion, test_dataset)
+    print("Training loss: {}\tTesting loss:{}".format(train_loss, test_loss))
+
     plt.figure(1)
     plt.title("Loss")
-    plt.plot(range(len(loss_history)), loss_history)
+    plt.plot(range(len(train_loss_history)), train_loss_history, label = "Training Loss")
+    plt.plot(range(len(test_loss_history)), test_loss_history, label = "Testing Loss")
     plt.yscale('log')
+    plt.legend()
 
     plt.show()
 
