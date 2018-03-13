@@ -24,8 +24,6 @@ class Plotter():
         self.plot_values = {}
 
     def show_plot(self):
-
-        # TODO: loop over titles, names to plot values changing plots
         for title in self.plot_values:
             plt.figure(title)
             for name in self.plot_values[title]:
