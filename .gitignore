@@ -1,4 +1,5 @@
 bvh_testdata
 *.pyc
 *.pkl
-visualization_data
+*.vdata
+*.txt

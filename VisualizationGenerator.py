@@ -18,7 +18,7 @@ NUM_FRAMES_LOOK_AHEAD = 60
 
 parser = argparse.ArgumentParser(
     description='Runs a trained model on a bvh file to generate a blender visualization file.')
-parser.add_argument('--model_filename', metavar='m', type=str, required=False, default="model.pkl",
+parser.add_argument('--model_filename', metavar='m', type=str, required=False, default="model",
     help='Name of file with network model.')
 parser.add_argument('--bvh_filename', metavar='b', type=str, required=False, default="bvh_testdata/bvh_conversion/cmu_bvh/137/137_16.bvh",
     help='Name of bvh file.')
@@ -26,9 +26,9 @@ parser.add_argument('--output_filename', metavar='o', type=str, required=False, 
     help='Name of bvh file.')
 args = parser.parse_args()
 
-output_filename = args.output_filename
+output_filename = args.output_filename + ".vdata"
 bvh_filename = args.bvh_filename
-model_filename = args.model_filename
+model_filename = args.model_filename + ".pkl"
 
 #Load model and initialize dataset
 model = torch.load(model_filename)
