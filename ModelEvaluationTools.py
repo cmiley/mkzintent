@@ -18,3 +18,29 @@ def evaluate_model_on_dataset(model, criterion, dataset):
         loss_sum += np.average(loss.data.numpy())
         num_samples += 1.0
     return loss_sum/num_samples
+
+class Plotter():
+    def __init__(self):
+        self.plot_values = {}
+
+    def show_plot(self):
+
+        # TODO: loop over titles, names to plot values changing plots
+        for title in self.plot_values:
+            plt.figure(title)
+            for name in self.plot_values[title]:
+                plot_data = self.plot_values[title][name]
+                xticks = range(len(plot_data))
+                plt.plot(xticks, plot_data, label=name)
+
+            plt.legend()
+        plt.show()
+
+    def record_value(self, title, name, value):
+        if not title in self.plot_values:
+            self.plot_values[title] = {}
+            
+        if not name in self.plot_values[title]:
+            self.plot_values[title][name] = []
+
+        self.plot_values[title][name].append(value)

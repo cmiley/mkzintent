@@ -20,6 +20,9 @@ def main():
 
     file_path_list = load_whitelist()[:50]
 
+    # TODO: argparse
+    model_filename = "model.pkl"
+
     print("Start time: {}".format(datetime.datetime.now()))
     print(str(len(file_path_list)) + " filenames loaded.")
 
@@ -34,8 +37,8 @@ def main():
 
     train_loader = data.DataLoader(dataset=train_dataset, batch_size=2**12, shuffle=True, num_workers=4)
 
-    train_loss_history = []
-    test_loss_history = []
+    plotter = Plotter()
+    LOSS_TITLE = "Loss Graph"
 
     # Hidden layer size
     h1, h2, h3 = 200, 150, 50
@@ -70,17 +73,17 @@ def main():
             loss.backward()
             optimizer.step()
 
+        # Evaluate model and add to plot.
         train_loss = evaluate_model_on_dataset(model, criterion, train_dataset)
         test_loss = evaluate_model_on_dataset(model, criterion, test_dataset)
-        train_loss_history.append(train_loss)
-        test_loss_history.append(test_loss)
+        plotter.record_value(LOSS_TITLE, "Training", train_loss)
+        plotter.record_value(LOSS_TITLE, "Testing", test_loss)
 
         print("Training loss: {}\tTesting loss:{}".format(train_loss, test_loss))
         print("Time for iteration {}".format(time.time() - start))
 
     print("Completed training...")
     print("End time: {}".format(datetime.datetime.now()))
-    model_filename = "model.pkl"
     print("Saving model to {}".format(model_filename))
     torch.save(model, model_filename)
 
@@ -88,14 +91,8 @@ def main():
     test_loss = evaluate_model_on_dataset(model, criterion, test_dataset)
     print("Training loss: {}\tTesting loss:{}".format(train_loss, test_loss))
 
-    plt.figure(1)
-    plt.title("Loss")
-    plt.plot(range(len(train_loss_history)), train_loss_history, label = "Training Loss")
-    plt.plot(range(len(test_loss_history)), test_loss_history, label = "Testing Loss")
-    plt.yscale('log')
-    plt.legend()
 
-    plt.show()
+    plotter.show_plot()
 
 if __name__ == '__main__':
     main()
