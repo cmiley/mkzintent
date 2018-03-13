@@ -11,14 +11,15 @@ from mpl_toolkits.mplot3d import Axes3D
 from bvh import *
 import time
 import os
+import datetime
 
 
 '''#######################################################
 CONSTANTS
 '''#######################################################
-# Number of frames at the begining of the file that are invalid.
-NUM_INVALID_FRAMES = 1
-NUM_FRAMES_LOOK_AHEAD = 1
+# Number of frames at the beginning of the file that are invalid.
+NUM_INVALID_FRAMES = 5
+NUM_FRAMES_LOOK_AHEAD = 60
 NN_INPUT_SIZE = 93
 NN_OUTPUT_SIZE = 3
 
@@ -34,7 +35,7 @@ class BVHDataset(data.Dataset):
             # One extra frame is discarded at the end
             num_samples = bvh_data.nframes - (NUM_INVALID_FRAMES + NUM_FRAMES_LOOK_AHEAD)
 
-            for file_index in range(NUM_INVALID_FRAMES, num_samples - NUM_FRAMES_LOOK_AHEAD):
+            for file_index in range(NUM_INVALID_FRAMES, bvh_data.nframes - NUM_FRAMES_LOOK_AHEAD):
                 bvh_data.frames[file_index] = map(float, bvh_data.frames[file_index])
                 bvh_data.frames[file_index+NUM_FRAMES_LOOK_AHEAD] = map(float, bvh_data.frames[file_index+NUM_FRAMES_LOOK_AHEAD])
 
@@ -58,29 +59,42 @@ class BVHDataset(data.Dataset):
     
 def adjust_learning_rate(optimizer, epoch):
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
-    lr = (0.005 ** ((epoch+3) //3))
+    lr = (0.01 ** ((epoch+3) //3))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
+def load_whitelist():
+    paths = []
+    with open("white_list", 'r') as f:
+        lines = f.readlines()
+    for line in lines:
+        line = line.strip()
+        paths.append(line)
+    return paths
 
 def main():
-    file_path_list = []
-    for i in range(11):
-        for j in range(5,10):
-            file_path_list.append(
-                "bvh_testdata/bvh_conversion/cmu_bvh/{}/{}_{}.bvh".format(str(j).zfill(2), str(j).zfill(2), str(i+1).zfill(2))
-            )
+
+    file_path_list = load_whitelist()
+    
+    # for i in range(1):
+    #     for j in range(8,9):
+    #         file_path_list.append(
+    #             "bvh_testdata/bvh_conversion/cmu_bvh/{}/{}_{}.bvh".format(str(j).zfill(2), str(j).zfill(2), str(i+1).zfill(2))
+    #         )
 
     # for root, dirs, files in os.walk("bvh_testdata/bvh_conversion/cmu_bvh"):
     #     for name in files:
     #         if name.endswith(".bvh"):
     #             file_path_list.append(os.path.join(root, name))
 
-    print("Filenames loaded.")
+    print("Start time: {}".format(datetime.datetime.now()))
+    print(str(len(file_path_list)) + " filenames loaded.")
+
+    small_filelist = file_path_list[0 : int(len(file_path_list)*0.9)]
     m_dataset = BVHDataset(file_path_list)
     print("Data has been indexed.")
 
-    data_loader = data.DataLoader(dataset=m_dataset, batch_size=80, shuffle=True, num_workers=6)
+    data_loader = data.DataLoader(dataset=m_dataset, batch_size=2048, shuffle=True, num_workers=6)
 
     loss_history = []
 
@@ -100,24 +114,30 @@ def main():
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 
     print("Starting training.")
-    for i in range(3):
+    log_iteration = 0
+    for i in range(600):
         print("Start of epoch {}".format(i+1))
         start = time.time()
         adjust_learning_rate(optimizer, i+1)
         for input_value, observed_output_value in data_loader:
+            log_iteration += 1
             optimizer.zero_grad()
             input_value = Variable(input_value).float()
             observed_output_value = Variable(observed_output_value).float()
 
             pred = model(input_value)
             loss = criterion(pred, observed_output_value)
-            loss_history.append(loss.data[0])
+            if log_iteration%100 == 0:
+                loss_average = np.average(loss.data.numpy())
+                loss_history.append(loss_average)
 
             loss.backward()
             optimizer.step()
-        print("loss:", loss.data[0])
+        print("loss:", loss_average)
         print("Time for iteration {}".format(time.time() - start))
 
+    print("Completed training...")
+    print("End time: {}".format(datetime.datetime.now()))
     model_filename = "model.pkl"
     print("Saving model to {}".format(model_filename))
     torch.save(model, model_filename)
