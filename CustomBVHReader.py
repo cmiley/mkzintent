@@ -91,7 +91,7 @@ def main():
     print(str(len(file_path_list)) + " filenames loaded.")
 
     small_filelist = file_path_list[0 : int(len(file_path_list)*0.9)]
-    m_dataset = BVHDataset(file_path_list)
+    m_dataset = BVHDataset(small_filelist)
     print("Data has been indexed.")
 
     data_loader = data.DataLoader(dataset=m_dataset, batch_size=2048, shuffle=True, num_workers=6)
