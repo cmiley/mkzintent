@@ -10,11 +10,17 @@ from CustomBVHReader import BVHDataset
 from bvh import *
 import argparse
 
+'''#######################################################
+CONSTANTS
+'''#######################################################
+NUM_INVALID_FRAMES = 5
+NUM_FRAMES_LOOK_AHEAD = 60
+
 parser = argparse.ArgumentParser(
     description='Runs a trained model on a bvh file to generate a blender visualization file.')
 parser.add_argument('--model_filename', metavar='m', type=str, required=False, default="model.pkl",
     help='Name of file with network model.')
-parser.add_argument('--bvh_filename', metavar='b', type=str, required=False, default="bvh_testdata/bvh_conversion/cmu_bvh/08/08_01.bvh",
+parser.add_argument('--bvh_filename', metavar='b', type=str, required=False, default="bvh_testdata/bvh_conversion/cmu_bvh/137/137_16.bvh",
     help='Name of bvh file.')
 parser.add_argument('--output_filename', metavar='o', type=str, required=False, default="visualization_data",
     help='Name of bvh file.')
@@ -48,20 +54,19 @@ for pose, delta in data_loader:
 print("Loading positions")
 with open(file_path_list[0]) as f:
     bvh_data = Bvh(f.read())
-for frame in bvh_data.frames[1:-1]:
+for frame in bvh_data.frames[NUM_INVALID_FRAMES:-NUM_FRAMES_LOOK_AHEAD]:
     pos = [float(val) for val in frame[:3]]
     positions.append( pos )
 
 print("Verifying list lengths.")
+print(str(len(positions)) + " " + str(len(pred_deltas)))
 assert(len(positions) == len(pred_deltas))
 
 print("Writing to file")
 with open(output_filename, "w+") as f:
     f.write(str(num_frames)+"\n")
     for i in range(len(positions)):
-        for item in positions[i]:
-            f.write(str(item) + " ")
-        for item in pred_deltas[i]:
-            f.write(str(item) + " ")
+        to_write = list(positions[i]) + list(pred_deltas[i])
+        f.write(" ".join(map(str, to_write)))
         f.write("\n")
 print("Finished!")
