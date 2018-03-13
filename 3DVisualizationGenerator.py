@@ -6,29 +6,37 @@ import torch.nn as nn
 import torch.utils.data as data
 import numpy as np
 from torch.autograd import Variable
-from CustomBVHReader import BVHDataset
+from BVHReader import *
 from bvh import *
 import argparse
 
-'''#######################################################
-CONSTANTS
-'''#######################################################
-NUM_INVALID_FRAMES = 5
-NUM_FRAMES_LOOK_AHEAD = 60
 
 parser = argparse.ArgumentParser(
-    description='Runs a trained model on a bvh file to generate a blender visualization file.')
-parser.add_argument('--model_filename', metavar='m', type=str, required=False, default="model",
-    help='Name of file with network model.')
-parser.add_argument('--bvh_filename', metavar='b', type=str, required=False, default="bvh_testdata/bvh_conversion/cmu_bvh/137/137_16.bvh",
-    help='Name of bvh file.')
-parser.add_argument('--output_filename', metavar='o', type=str, required=False, default="visualization_data",
-    help='Name of bvh file.')
+    description='Runs a trained model on a bvh file to generate a blender visualization file.'
+)
+parser.add_argument('--model_filename',
+    type=str,
+    required=False,
+    default="model",
+    help='Name of file with network model.'
+)
+parser.add_argument('--bvh_filename',
+    type=str,
+    required=False,
+    default="bvh_testdata/bvh_conversion/cmu_bvh/137/137_16.bvh",
+    help='Name of bvh file.'
+)
+parser.add_argument('--output_filename',
+    type=str,
+    required=False,
+    default="visualization_data",
+    help='Name of bvh file.'
+)
 args = parser.parse_args()
 
 output_filename = args.output_filename + ".vdata"
 bvh_filename = args.bvh_filename
-model_filename = args.model_filename + ".pkl"
+model_filename = args.model_filename
 
 #Load model and initialize dataset
 model = torch.load(model_filename)
@@ -52,7 +60,7 @@ for pose, delta in data_loader:
 
 # Load positions
 print("Loading positions")
-with open(file_path_list[0]) as f:
+with open(bvh_filename) as f:
     bvh_data = Bvh(f.read())
 for frame in bvh_data.frames[NUM_INVALID_FRAMES:-NUM_FRAMES_LOOK_AHEAD]:
     pos = [float(val) for val in frame[:3]]
