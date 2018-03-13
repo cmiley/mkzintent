@@ -3,9 +3,9 @@ from torch.autograd import Variable
 import numpy as np
 import matplotlib.pyplot as plt
 
-def evaluate_model_on_dataset(model, criterion, dataset):
 
-    loader = data.DataLoader(dataset=dataset, batch_size=2**12, shuffle=True)
+def evaluate_model_on_dataset(model, criterion, dataset):
+    loader = data.DataLoader(dataset=dataset, batch_size=2 ** 12, shuffle=True)
 
     loss_sum = 0.0
     num_samples = 0.0
@@ -17,7 +17,8 @@ def evaluate_model_on_dataset(model, criterion, dataset):
         loss = criterion(pred, observed_output_value)
         loss_sum += np.average(loss.data.numpy())
         num_samples += 1.0
-    return loss_sum/num_samples
+    return loss_sum / num_samples
+
 
 class Plotter():
     def __init__(self):
@@ -37,7 +38,7 @@ class Plotter():
     def record_value(self, title, name, value):
         if not title in self.plot_values:
             self.plot_values[title] = {}
-            
+
         if not name in self.plot_values[title]:
             self.plot_values[title][name] = []
 
