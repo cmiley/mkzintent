@@ -1,21 +1,21 @@
-import torch
+import sys
 import torch.nn as nn
-import torch.utils.data as data
-import numpy as np
-from torch.autograd import Variable
 
 import time
 import datetime
+import logging
 
 from BVHReader import *
 from ModelEvaluationTools import *
 
+LOG_DIR = "logs/"
 
-def adjust_learning_rate(optimizer, epoch):
-    """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
-    lr = (0.01 ** ((epoch + 3) // 3))
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
+LOSS_LOG_LEVEL = logging.INFO
+TIMING_LOG_LEVEL = logging.INFO
+IO_LOG_LEVEL = logging.NOTSET
+
+LOSS_TITLE = "Loss Graph"
+ITERATION_TITLE = "Iteration Graph"
 
 
 def main():
@@ -24,21 +24,37 @@ def main():
     # TODO: argparse
     model_filename = "model.pkl"
 
-    print("Start time: {}".format(datetime.datetime.now()))
-    print(str(len(file_path_list)) + " filenames loaded.")
+    logger = logging.getLogger("TrainingLogger")
+    logger.setLevel(logging.DEBUG)
+    log_file_name = LOG_DIR + datetime.datetime.now().strftime("%Y-%m-%d_%H%M") + ".log"
+
+    fh = logging.FileHandler(log_file_name)
+    fh.setLevel(logging.NOTSET)
+
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(logging.INFO)
+
+    formatter = logging.Formatter('[%(asctime)s] - %(levelname)s: %(message)s')
+    fh.setFormatter(formatter)
+    ch.setFormatter(formatter)
+
+    logger.addHandler(fh)
+    logger.addHandler(ch)
+
+    logger.info("Start time: {}".format(datetime.datetime.now()))
+    logger.debug(str(len(file_path_list)) + " file names loaded.")
 
     split_index = int(len(file_path_list) * 0.9)
-    train_filelist = file_path_list[:split_index]
-    test_filelist = file_path_list[split_index:]
+    train_file_list = file_path_list[:split_index]
+    test_file_list = file_path_list[split_index:]
 
-    train_dataset = BVHDataset(train_filelist)
-    test_dataset = BVHDataset(test_filelist)
-    print("Data has been indexed.")
+    train_dataset = BVHDataset(train_file_list)
+    test_dataset = BVHDataset(test_file_list)
+    logger.debug("Data has been indexed.")
 
     train_loader = data.DataLoader(dataset=train_dataset, batch_size=2 ** 12, shuffle=True, num_workers=4)
 
     plotter = Plotter()
-    LOSS_TITLE = "Loss Graph"
 
     # Hidden layer size
     h1, h2, h3 = 200, 150, 50
@@ -55,10 +71,10 @@ def main():
     criterion = nn.MSELoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 
-    print("Starting training.")
+    logger.debug("Starting training.")
 
     for i in range(10):
-        print("Start of epoch {}".format(i + 1))
+        logging.debug("Start of epoch {}".format(i + 1))
         start = time.time()
         adjust_learning_rate(optimizer, i + 1)
         for input_value, observed_output_value in train_loader:
@@ -67,8 +83,8 @@ def main():
             input_value = Variable(input_value).float()
             observed_output_value = Variable(observed_output_value).float()
 
-            pred = model(input_value)
-            loss = criterion(pred, observed_output_value)
+            predicted_value = model(input_value)
+            loss = criterion(predicted_value, observed_output_value)
             loss.backward()
             optimizer.step()
 
@@ -78,19 +94,29 @@ def main():
         plotter.record_value(LOSS_TITLE, "Training", train_loss)
         plotter.record_value(LOSS_TITLE, "Testing", test_loss)
 
-        print("Training loss: {}\tTesting loss:{}".format(train_loss, test_loss))
-        print("Time for iteration {}".format(time.time() - start))
+        t_delta = time.time()-start
 
-    print("Completed training...")
-    print("End time: {}".format(datetime.datetime.now()))
-    print("Saving model to {}".format(model_filename))
+        plotter.record_value(ITERATION_TITLE, "Iterations", t_delta)
+
+        logger.info("Training loss: {}\tTesting loss:{}".format(train_loss, test_loss))
+        logger.info("Time for iteration {}".format(t_delta))
+
+    logger.debug("Completed training...")
+    logger.info("End time: {}".format(datetime.datetime.now()))
+    logger.debug("Saving model to {}".format(model_filename))
     torch.save(model, model_filename)
 
     train_loss = evaluate_model_on_dataset(model, criterion, train_dataset)
     test_loss = evaluate_model_on_dataset(model, criterion, test_dataset)
-    print("Training loss: {}\tTesting loss:{}".format(train_loss, test_loss))
+    logger.info("Training loss: {}\tTesting loss:{}".format(train_loss, test_loss))
 
     plotter.show_plot()
+
+
+def adjust_learning_rate(optimizer, epoch):
+    lr = (0.01 ** ((epoch + 3) // 3))
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
 
 
 if __name__ == '__main__':

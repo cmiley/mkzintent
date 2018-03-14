@@ -1,10 +1,7 @@
 '''#######################################################
 IMPORTS
 '''  #######################################################
-import torch
-import torch.nn as nn
-import torch.utils.data as data
-import numpy as np
+import logging
 from torch.autograd import Variable
 from BVHReader import *
 from bvh import *
@@ -16,7 +13,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('--model_filename',
                     type=str,
                     required=False,
-                    default="model",
+                    default="model.pkl",
                     help='Name of file with network model.'
                     )
 parser.add_argument('--bvh_filename',
@@ -31,6 +28,7 @@ parser.add_argument('--output_filename',
                     default="visualization_data",
                     help='Name of bvh file.'
                     )
+
 args = parser.parse_args()
 
 output_filename = args.output_filename + ".vdata"
@@ -42,39 +40,43 @@ model = torch.load(model_filename)
 file_path_list = [bvh_filename]
 m_dataset = BVHDataset(file_path_list)
 num_frames = len(m_dataset)
-print("{} frames loaded.".format(num_frames))
+logging.info("{} frames loaded.".format(num_frames))
 
 data_loader = data.DataLoader(dataset=m_dataset, batch_size=1, shuffle=False)
 
 # Generate data
-pred_deltas = []
+predicted_deltas = []
 positions = []
 
 # Predict Deltas
-print("Predicting Deltas")
+logging.info("Predicting Deltas")
 for pose, delta in data_loader:
     pose = Variable(pose).float()
     pred = model(pose).data.numpy()[0]
-    pred_deltas.append(pred)
+    predicted_deltas.append(pred)
 
 # Load positions
-print("Loading positions")
+logging.info("Loading positions")
 with open(bvh_filename) as f:
     bvh_data = Bvh(f.read())
 for frame in bvh_data.frames[NUM_INVALID_FRAMES:-NUM_FRAMES_LOOK_AHEAD]:
     pos = [float(val) for val in frame[:3]]
     positions.append(pos)
 
-print("Verifying list lengths.")
-print(str(len(positions)) + " " + str(len(pred_deltas)))
-assert (len(positions) == len(pred_deltas))
+logging.info("Verifying list lengths.")
+try:
+    assert (len(positions) == len(predicted_deltas))
+except:
+    logging.ERROR(
+        "Number of positions and predictions do not match! {}=/={}".format(len(positions), len(predicted_deltas))
+    )
+    exit()
 
-print("Writing to file")
+logging.info("Writing to file")
 with open(output_filename, "w+") as f:
     f.write(str(num_frames) + "\n")
     f.write(bvh_filename + "\n")
     for i in range(len(positions)):
-        to_write = list(positions[i]) + list(pred_deltas[i])
+        to_write = list(positions[i]) + list(predicted_deltas[i])
         f.write(" ".join(map(str, to_write)))
         f.write("\n")
-print("Finished!")
