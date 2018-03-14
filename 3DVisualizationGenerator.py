@@ -48,11 +48,13 @@ data_loader = data.DataLoader(dataset=m_dataset, batch_size=1, shuffle=False)
 predicted_deltas = []
 positions = []
 
+h_state = None
+
 # Predict Deltas
 logging.info("Predicting Deltas")
 for pose, delta in data_loader:
     pose = Variable(pose).float()
-    pred = model(pose).data.numpy()[0]
+    pred, h_state =model(pose, h_state).data.numpy()[0]
     predicted_deltas.append(pred)
 
 # Load positions
