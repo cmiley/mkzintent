@@ -3,3 +3,4 @@ bvh_testdata
 *.pkl
 *.vdata
 *.txt
+logs
