@@ -18,6 +18,28 @@ LOSS_TITLE = "Loss Graph"
 ITERATION_TITLE = "Iteration Graph"
 
 
+class RNN(nn.Module):
+    def __init__(self, input_size, hidden_size, output_size):
+        super(RNN, self).__init__()
+
+        self.hidden_size = hidden_size
+
+        self.i2h = nn.Linear(input_size + hidden_size, hidden_size)
+        self.i2o = nn.Linear(input_size + hidden_size, output_size)
+        self.softmax = nn.LogSoftmax()
+
+    def forward(self, input, hidden):
+        combined = torch.cat((input, hidden), 2)
+
+        hidden = self.i2h(combined)
+        output = self.i2o(combined)
+        output = self.softmax(output)
+        return output, hidden
+
+    def init_hidden(self):
+        return Variable(torch.zeros(1, self.hidden_size))
+
+
 def main():
     file_path_list = load_whitelist()[:50]
 
@@ -56,20 +78,14 @@ def main():
 
     plotter = Plotter()
 
-    # Hidden layer size
-    h1, h2, h3 = 200, 150, 50
-    model = torch.nn.Sequential(
-        nn.Linear(NN_INPUT_SIZE, h1),
-        nn.ReLU(),
-        nn.Linear(h1, h2),
-        nn.ReLU(),
-        nn.Linear(h2, h3),
-        nn.ReLU(),
-        nn.Linear(h3, NN_OUTPUT_SIZE)
-    )
+    rnn = RNN(NN_INPUT_SIZE, 93, NN_OUTPUT_SIZE)
 
     criterion = nn.MSELoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+    # optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+    optimizer = torch.optim.Adam(rnn.parameters(), lr=0.01)
+
+    #Initial hidden state
+    hidden = rnn.init_hidden()
 
     logger.debug("Starting training.")
 
@@ -83,14 +99,16 @@ def main():
             input_value = Variable(input_value).float()
             observed_output_value = Variable(observed_output_value).float()
 
-            predicted_value = model(input_value)
+            # predicted_value = model(input_value)
+            predicted_value, hidden = rnn(input_value, hidden)
+
             loss = criterion(predicted_value, observed_output_value)
             loss.backward()
             optimizer.step()
 
         # Evaluate model and add to plot.
-        train_loss = evaluate_model_on_dataset(model, criterion, train_dataset)
-        test_loss = evaluate_model_on_dataset(model, criterion, test_dataset)
+        train_loss = evaluate_rnn_model_on_dataset(rnn, criterion, train_dataset)
+        test_loss = evaluate_rnn_model_on_dataset(rnn, criterion, test_dataset)
         plotter.record_value(LOSS_TITLE, "Training", train_loss)
         plotter.record_value(LOSS_TITLE, "Testing", test_loss)
 
@@ -104,10 +122,10 @@ def main():
     logger.debug("Completed training...")
     logger.info("End time: {}".format(datetime.datetime.now()))
     logger.debug("Saving model to {}".format(model_filename))
-    torch.save(model, model_filename)
+    torch.save(rnn, model_filename)
 
-    train_loss = evaluate_model_on_dataset(model, criterion, train_dataset)
-    test_loss = evaluate_model_on_dataset(model, criterion, test_dataset)
+    train_loss = evaluate_rnn_model_on_dataset(rnn, criterion, train_dataset)
+    test_loss = evaluate_rnn_model_on_dataset(rnn, criterion, test_dataset)
     logger.info("Training loss: {}\tTesting loss:{}".format(train_loss, test_loss))
 
     plotter.show_plot()
