@@ -27,17 +27,21 @@ def evaluate_rnn_model_on_dataset(model, criterion, dataset):
 
     loss_sum = 0.0
     num_samples = 0.0
-    h_state = None
 
-    for input_value, observed_output_value in loader:
-        input_value = Variable(input_value).float()
-        observed_output_value = Variable(observed_output_value).float()
+    for input_output_sequence in loader:
+        num_sequences = input_output_sequence[0][0].size()[0]
 
-        pred, h_state = model(input_value, h_state)
+        hidden = model.init_hidden(num_sequences)
 
-        loss = criterion(pred, observed_output_value)
-        loss_sum += np.average(loss.data.numpy())
-        num_samples += 1.0
+        for input_value, observed_output_value in input_output_sequence:
+            input_value = Variable(input_value).float()
+            observed_output_value = Variable(observed_output_value).float()
+
+            predicted_value, hidden = model(input_value, hidden)
+
+            loss = criterion(predicted_value, observed_output_value)
+            loss_sum += np.average(loss.data.numpy())
+            num_samples += 1.0
     return loss_sum / num_samples
 
 
