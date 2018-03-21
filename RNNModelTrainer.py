@@ -28,23 +28,23 @@ class RNN(nn.Module):
         self.i2o = nn.Linear(input_size + hidden_size, output_size)
         self.softmax = nn.LogSoftmax()
 
-    def forward(self, input, hidden):
-        combined = torch.cat((input, hidden), 2)
+    def forward(self, input_value, hidden):
+        combined = torch.cat((input_value, hidden), 1)
 
         hidden = self.i2h(combined)
         output = self.i2o(combined)
         output = self.softmax(output)
         return output, hidden
 
-    def init_hidden(self):
-        return Variable(torch.zeros(1, self.hidden_size))
+    def init_hidden(self, n):
+        return Variable(torch.zeros(n, self.hidden_size))
 
 
 def main():
-    file_path_list = load_whitelist()[:50]
+    file_path_list = load_whitelist()
 
     # TODO: argparse
-    model_filename = "model.pkl"
+    model_filename = "rnn-model.pkl"
 
     logger = logging.getLogger("TrainingLogger")
     logger.setLevel(logging.DEBUG)
@@ -70,40 +70,41 @@ def main():
     train_file_list = file_path_list[:split_index]
     test_file_list = file_path_list[split_index:]
 
-    train_dataset = BVHDataset(train_file_list)
-    test_dataset = BVHDataset(test_file_list)
+    train_dataset = BVHRNNDataset(train_file_list, RNN_SEQUENCE_SIZE)
+    test_dataset = BVHRNNDataset(test_file_list, RNN_SEQUENCE_SIZE)
     logger.debug("Data has been indexed.")
 
     train_loader = data.DataLoader(dataset=train_dataset, batch_size=2 ** 12, shuffle=True, num_workers=4)
 
     plotter = Plotter()
 
-    rnn = RNN(NN_INPUT_SIZE, 93, NN_OUTPUT_SIZE)
+    rnn = RNN(NN_INPUT_SIZE, RNN_HIDDEN_SIZE, NN_OUTPUT_SIZE)
 
     criterion = nn.MSELoss()
     # optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
     optimizer = torch.optim.Adam(rnn.parameters(), lr=0.01)
 
-    #Initial hidden state
-    hidden = rnn.init_hidden()
-
     logger.debug("Starting training.")
 
-    for i in range(10):
+    for i in range(50):
         logging.debug("Start of epoch {}".format(i + 1))
         start = time.time()
         adjust_learning_rate(optimizer, i + 1)
-        for input_value, observed_output_value in train_loader:
-            optimizer.zero_grad()
 
-            input_value = Variable(input_value).float()
-            observed_output_value = Variable(observed_output_value).float()
+        for input_output_sequence in train_loader:
+            num_sequences = input_output_sequence[0][0].size()[0]
 
-            # predicted_value = model(input_value)
-            predicted_value, hidden = rnn(input_value, hidden)
+            hidden = rnn.init_hidden(num_sequences)
 
-            loss = criterion(predicted_value, observed_output_value)
-            loss.backward()
+            for input_value, observed_output_value in input_output_sequence:
+                optimizer.zero_grad()
+                input_value = Variable(input_value).float()
+                observed_output_value = Variable(observed_output_value).float()
+
+                predicted_value, hidden = rnn(input_value, hidden)
+
+                loss = criterion(predicted_value, observed_output_value)
+                loss.backward(retain_variables=True)
             optimizer.step()
 
         # Evaluate model and add to plot.
