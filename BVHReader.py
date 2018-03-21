@@ -15,6 +15,9 @@ NUM_FRAMES_LOOK_AHEAD = 60
 NN_INPUT_SIZE = 93
 NN_OUTPUT_SIZE = 3
 
+RNN_SEQUENCE_SIZE = 10
+RNN_HIDDEN_SIZE = 30
+
 
 class BVHDataset(data.Dataset):
 
@@ -44,6 +47,66 @@ class BVHDataset(data.Dataset):
         input_data = torch.from_numpy(pose).float()
 
         return input_data, observed_output_data
+
+    def __len__(self, ):
+        return self.length
+
+
+class BVHRNNDataset(data.Dataset):
+
+    def __init__(self, file_paths, sequence_size):
+        self.data = []
+        self.seq_map = [(0, 0)]
+        self.sequence_size = sequence_size
+
+        frame_count = 0
+        seq_count = 0
+        for file_path in file_paths:
+            with open(file_path) as f:
+                bvh_data = Bvh(f.read())
+
+            for file_index in range(NUM_INVALID_FRAMES, bvh_data.nframes - NUM_FRAMES_LOOK_AHEAD):
+                bvh_data.frames[file_index] = map(float, bvh_data.frames[file_index])
+                bvh_data.frames[file_index + NUM_FRAMES_LOOK_AHEAD] = map(float, bvh_data.frames[
+                    file_index + NUM_FRAMES_LOOK_AHEAD])
+
+                pose = np.asarray(bvh_data.frames[file_index][NN_OUTPUT_SIZE:])
+                initial = np.asarray(bvh_data.frames[file_index][:NN_OUTPUT_SIZE])
+                final = np.asarray(bvh_data.frames[file_index + NUM_FRAMES_LOOK_AHEAD][:NN_OUTPUT_SIZE])
+                delta = final - initial
+                self.data.append((initial, pose, delta))
+
+                frame_count += 1
+                seq_count += 1
+
+            seq_count -= sequence_size - 1
+            self.seq_map.append((seq_count, frame_count))
+
+        self.length = self.seq_map[-1][0]
+
+    def get_index(self, input_index):
+        i = 0
+        while i < len(self.seq_map) and self.seq_map[i][0] <= input_index:
+            i += 1
+        i -= 1
+        map_tuple = self.seq_map[i]
+        offset = input_index - map_tuple[0]
+        return map_tuple[1] + offset
+
+    def __getitem__(self, index):
+
+        return_sequence = []
+        # Loop over some sequence length to get multiple pose/output pairs
+        start_index = self.get_index(index)
+        for i in range(start_index, start_index+self.sequence_size):
+            position, pose, delta = self.data[i]
+            observed_output_data = torch.from_numpy(delta).float()
+            input_data = torch.from_numpy(pose).float()
+
+            return_sequence.append([input_data, observed_output_data])
+
+        # We want a sequence of input and output data, not just one.
+        return return_sequence
 
     def __len__(self, ):
         return self.length
