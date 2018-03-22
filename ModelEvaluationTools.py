@@ -2,6 +2,7 @@ import torch.utils.data as data
 from torch.autograd import Variable
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 
 def evaluate_model_on_dataset(model, criterion, dataset):
@@ -50,6 +51,9 @@ class Plotter:
         self.plot_values = {}
 
     def show_plot(self):
+        plt.show()
+
+    def prepare_plots(self):
         for title in self.plot_values:
             plt.figure(title)
             for name in self.plot_values[title]:
@@ -58,7 +62,6 @@ class Plotter:
                 plt.plot(xticks, plot_data, label=name)
 
             plt.legend()
-        plt.show()
 
     def record_value(self, title, name, value):
         if not title in self.plot_values:
@@ -68,3 +71,8 @@ class Plotter:
             self.plot_values[title][name] = []
 
         self.plot_values[title][name].append(value)
+
+    def save_plots(self, path):
+        for title in self.plot_values:
+            plt.figure(title)
+            plt.savefig(os.path.join(path, title + ".png"), bbox_inches='tight')
