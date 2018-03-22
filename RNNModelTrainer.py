@@ -1,4 +1,6 @@
 import sys
+
+import os
 import torch.nn as nn
 
 import time
@@ -24,31 +26,57 @@ class RNN(nn.Module):
 
         self.recurrent_size = recurrent_size
 
-        self.i2h = nn.Linear(input_size + recurrent_size, recurrent_size)
-        self.i2o = nn.Linear(input_size + recurrent_size, output_size)
-        self.softmax = nn.LogSoftmax()
+        self.recurrent_layer = nn.Linear(input_size + recurrent_size, recurrent_size)
+
+        # Hidden layer size
+        h1, h2, h3 = 200, 150, 50
+        self.feed_forward_layers = torch.nn.Sequential(
+            nn.Linear(input_size + recurrent_size, h1),
+            nn.ReLU(),
+            nn.Linear(h1, h2),
+            nn.ReLU(),
+            nn.Linear(h2, h3),
+            nn.ReLU(),
+            nn.Linear(h3, output_size)
+        )
 
     def forward(self, input_value, recurrent):
         combined = torch.cat((input_value, recurrent), 1)
 
-        recurrent = self.i2h(combined)
-        output = self.i2o(combined)
-        output = self.softmax(output)
+        recurrent = self.recurrent_layer(combined)
+        output = self.feed_forward_layers(combined)
         return output, recurrent
 
     def init_recurrent(self, n):
         return Variable(torch.zeros(n, self.recurrent_size))
 
 
+def save_test_train_split(path, train_file_list, test_file_list):
+    split_info = {
+        "train_file_list": train_file_list,
+        "test_file_list": test_file_list
+    }
+    import json
+    with open(os.path.join(path, "test_train_split_info"), "w+") as f:
+        f.write(json.dumps(split_info, indent=2))
+
+
 def main():
     file_path_list = load_whitelist()
 
-    # TODO: argparse
-    model_filename = "rnn-model.pkl"
+    directory_name = datetime.datetime.now().strftime("%Y-%m-%d_%H%M")
+
+    try:
+        os.makedirs(directory_name)
+    except OSError as e:
+        print(e.message)
+        exit()
+
+    model_filename = os.path.join(directory_name, "model.pkl")
 
     logger = logging.getLogger("TrainingLogger")
     logger.setLevel(logging.DEBUG)
-    log_file_name = LOG_DIR + datetime.datetime.now().strftime("%Y-%m-%d_%H%M") + ".log"
+    log_file_name = os.path.join(directory_name, "training.log")
 
     fh = logging.FileHandler(log_file_name)
     fh.setLevel(logging.NOTSET)
@@ -70,6 +98,8 @@ def main():
     train_file_list = file_path_list[:split_index]
     test_file_list = file_path_list[split_index:]
 
+    save_test_train_split(directory_name, train_file_list, test_file_list)
+
     train_dataset = BVHRNNDataset(train_file_list, RNN_SEQUENCE_SIZE)
     test_dataset = BVHRNNDataset(test_file_list, RNN_SEQUENCE_SIZE)
     logger.debug("Data has been indexed.")
@@ -86,7 +116,7 @@ def main():
 
     logger.debug("Starting training.")
 
-    for i in range(50):
+    for i in range(10):
         logging.debug("Start of epoch {}".format(i + 1))
         start = time.time()
         adjust_learning_rate(optimizer, i + 1)
@@ -113,7 +143,7 @@ def main():
         plotter.record_value(LOSS_TITLE, "Training", train_loss)
         plotter.record_value(LOSS_TITLE, "Testing", test_loss)
 
-        t_delta = time.time()-start
+        t_delta = time.time() - start
 
         plotter.record_value(ITERATION_TITLE, "Iterations", t_delta)
 
@@ -129,11 +159,13 @@ def main():
     test_loss = evaluate_rnn_model_on_dataset(rnn, criterion, test_dataset)
     logger.info("Training loss: {}\tTesting loss:{}".format(train_loss, test_loss))
 
+    plotter.prepare_plots()
+    plotter.save_plots(directory_name)
     plotter.show_plot()
 
 
 def adjust_learning_rate(optimizer, epoch):
-    lr = (0.01 ** ((epoch + 3) // 3))
+    lr = (0.01 * (0.6 ** (epoch // 3)))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
