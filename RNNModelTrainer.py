@@ -19,25 +19,25 @@ ITERATION_TITLE = "Iteration Graph"
 
 
 class RNN(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
+    def __init__(self, input_size, recurrent_size, output_size):
         super(RNN, self).__init__()
 
-        self.hidden_size = hidden_size
+        self.recurrent_size = recurrent_size
 
-        self.i2h = nn.Linear(input_size + hidden_size, hidden_size)
-        self.i2o = nn.Linear(input_size + hidden_size, output_size)
+        self.i2h = nn.Linear(input_size + recurrent_size, recurrent_size)
+        self.i2o = nn.Linear(input_size + recurrent_size, output_size)
         self.softmax = nn.LogSoftmax()
 
-    def forward(self, input_value, hidden):
-        combined = torch.cat((input_value, hidden), 1)
+    def forward(self, input_value, recurrent):
+        combined = torch.cat((input_value, recurrent), 1)
 
-        hidden = self.i2h(combined)
+        recurrent = self.i2h(combined)
         output = self.i2o(combined)
         output = self.softmax(output)
-        return output, hidden
+        return output, recurrent
 
-    def init_hidden(self, n):
-        return Variable(torch.zeros(n, self.hidden_size))
+    def init_recurrent(self, n):
+        return Variable(torch.zeros(n, self.recurrent_size))
 
 
 def main():
@@ -78,7 +78,7 @@ def main():
 
     plotter = Plotter()
 
-    rnn = RNN(NN_INPUT_SIZE, RNN_HIDDEN_SIZE, NN_OUTPUT_SIZE)
+    rnn = RNN(NN_INPUT_SIZE, RNN_RECURRENT_SIZE, NN_OUTPUT_SIZE)
 
     criterion = nn.MSELoss()
     # optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
@@ -94,14 +94,14 @@ def main():
         for input_output_sequence in train_loader:
             num_sequences = input_output_sequence[0][0].size()[0]
 
-            hidden = rnn.init_hidden(num_sequences)
+            recurrent = rnn.init_recurrent(num_sequences)
 
             for input_value, observed_output_value in input_output_sequence:
                 optimizer.zero_grad()
                 input_value = Variable(input_value).float()
                 observed_output_value = Variable(observed_output_value).float()
 
-                predicted_value, hidden = rnn(input_value, hidden)
+                predicted_value, recurrent = rnn(input_value, recurrent)
 
                 loss = criterion(predicted_value, observed_output_value)
                 loss.backward(retain_variables=True)

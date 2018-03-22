@@ -31,13 +31,13 @@ def evaluate_rnn_model_on_dataset(model, criterion, dataset):
     for input_output_sequence in loader:
         num_sequences = input_output_sequence[0][0].size()[0]
 
-        hidden = model.init_hidden(num_sequences)
+        recurrent = model.init_recurrent(num_sequences)
 
         for input_value, observed_output_value in input_output_sequence:
             input_value = Variable(input_value).float()
             observed_output_value = Variable(observed_output_value).float()
 
-            predicted_value, hidden = model(input_value, hidden)
+            predicted_value, recurrent = model(input_value, recurrent)
 
             loss = criterion(predicted_value, observed_output_value)
             loss_sum += np.average(loss.data.numpy())

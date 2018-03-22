@@ -50,13 +50,13 @@ data_loader = data.DataLoader(dataset=m_dataset, batch_size=1, shuffle=False)
 predicted_deltas = []
 positions = []
 
-hidden = model.init_hidden(1)
+recurrent = model.init_recurrent(1)
 
 # Predict Deltas
 logging.info("Predicting Deltas")
 for pose, delta in data_loader:
     pose = Variable(pose).float()
-    pred, hidden = model(pose, hidden)
+    pred, recurrent = model(pose, recurrent)
     predicted_deltas.append(pred.data.numpy()[0])
 
 # Load positions
