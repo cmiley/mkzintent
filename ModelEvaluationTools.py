@@ -1,9 +1,11 @@
+import logging
 import pickle
 import torch.utils.data as data
 from torch.autograd import Variable
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import sys
 from matplotlib import rc
 
 # rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
@@ -90,3 +92,41 @@ class Plotter:
         for title in self.plot_values:
             plt.figure(title)
             plt.savefig(os.path.join(path, title + ".png"), bbox_inches='tight')
+
+
+def adjust_learning_rate(optimizer, epoch):
+    # TODO: make these parameters ( potentially make a class )
+    lr = (0.01 * (0.6 ** (epoch // 3)))
+    for param_group in optimizer.param_groups:
+        param_group['lr'] = lr
+
+
+def create_logger(directory_name):
+    logger = logging.getLogger("TrainingLogger")
+    logger.setLevel(logging.DEBUG)
+    log_file_name = os.path.join(directory_name, "training.log")
+
+    fh = logging.FileHandler(log_file_name)
+    fh.setLevel(logging.NOTSET)
+
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(logging.INFO)
+
+    formatter = logging.Formatter('[%(asctime)s] - %(levelname)s: %(message)s')
+    fh.setFormatter(formatter)
+    ch.setFormatter(formatter)
+
+    logger.addHandler(fh)
+    logger.addHandler(ch)
+    return logger
+
+
+def save_test_train_split(path, train_file_list, test_file_list):
+    split_info = {
+        "train_file_list": train_file_list,
+        "test_file_list": test_file_list
+    }
+    import json
+    with open(os.path.join(path, "test_train_split_info"), "w+") as f:
+        f.write(json.dumps(split_info, indent=2))
+

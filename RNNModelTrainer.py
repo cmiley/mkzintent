@@ -10,12 +10,6 @@ import logging
 from BVHReader import *
 from ModelEvaluationTools import *
 
-LOG_DIR = "logs/"
-
-LOSS_LOG_LEVEL = logging.INFO
-TIMING_LOG_LEVEL = logging.INFO
-IO_LOG_LEVEL = logging.NOTSET
-
 LOSS_TITLE = "Loss Graph"
 ITERATION_TITLE = "Iteration Graph"
 
@@ -51,16 +45,6 @@ class RNN(nn.Module):
         return Variable(torch.zeros(n, self.recurrent_size))
 
 
-def save_test_train_split(path, train_file_list, test_file_list):
-    split_info = {
-        "train_file_list": train_file_list,
-        "test_file_list": test_file_list
-    }
-    import json
-    with open(os.path.join(path, "test_train_split_info"), "w+") as f:
-        f.write(json.dumps(split_info, indent=2))
-
-
 def main():
     file_path_list = load_whitelist()
 
@@ -74,22 +58,7 @@ def main():
 
     model_filename = os.path.join(directory_name, "model.pkl")
 
-    logger = logging.getLogger("TrainingLogger")
-    logger.setLevel(logging.DEBUG)
-    log_file_name = os.path.join(directory_name, "training.log")
-
-    fh = logging.FileHandler(log_file_name)
-    fh.setLevel(logging.NOTSET)
-
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(logging.INFO)
-
-    formatter = logging.Formatter('[%(asctime)s] - %(levelname)s: %(message)s')
-    fh.setFormatter(formatter)
-    ch.setFormatter(formatter)
-
-    logger.addHandler(fh)
-    logger.addHandler(ch)
+    logger = create_logger(directory_name)
 
     logger.info("Start time: {}".format(datetime.datetime.now()))
     logger.debug(str(len(file_path_list)) + " file names loaded.")
@@ -163,12 +132,6 @@ def main():
     plotter.pickle_plots(directory_name)
     plotter.save_plots(directory_name)
     plotter.show_plot()
-
-
-def adjust_learning_rate(optimizer, epoch):
-    lr = (0.01 * (0.6 ** (epoch // 3)))
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
 
 
 if __name__ == '__main__':
