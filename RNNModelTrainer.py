@@ -22,6 +22,9 @@ class RNN(nn.Module):
 
         self.recurrent_layer = nn.Linear(input_size + recurrent_size, recurrent_size)
 
+        self.recurrent = None
+        self.init_recurrent(recurrent_size)
+
         # Hidden layer size
         h1, h2, h3 = 200, 150, 50
         self.feed_forward_layers = torch.nn.Sequential(
@@ -34,19 +37,34 @@ class RNN(nn.Module):
             nn.Linear(h3, output_size)
         )
 
-    def forward(self, input_value, recurrent):
-        combined = torch.cat((input_value, recurrent), 1)
+    def forward(self, input_value):
+        combined = torch.cat((input_value, self.recurrent), 1)
 
-        recurrent = self.recurrent_layer(combined)
+        self.recurrent = self.recurrent_layer(combined)
         output = self.feed_forward_layers(combined)
-        return output, recurrent
+        return output
 
     def init_recurrent(self, n):
-        return Variable(torch.zeros(n, self.recurrent_size))
+        self.recurrent = Variable(torch.zeros(n, self.recurrent_size))
+
+    def m_train(self, input_output_sequence, optimizer, criterion):
+        num_sequences = input_output_sequence[0][0].size()[0]
+        self.init_recurrent(num_sequences)
+
+        for input_value, observed_output_value in input_output_sequence:
+            optimizer.zero_grad()
+            input_value = Variable(input_value).float()
+            observed_output_value = Variable(observed_output_value).float()
+
+            predicted_value = self(input_value)
+
+            loss = criterion(predicted_value, observed_output_value)
+            loss.backward(retain_variables=True)
+        optimizer.step()
 
 
 def main():
-    file_path_list = load_whitelist()
+    file_path_list = load_whitelist()[:5]
 
     directory_name = datetime.datetime.now().strftime("%Y-%m-%d_%H%M")
 
@@ -54,6 +72,7 @@ def main():
         os.makedirs(directory_name)
     except OSError as e:
         print(e.message)
+        print(e.strerror)
         exit()
 
     model_filename = os.path.join(directory_name, "model.pkl")
@@ -91,20 +110,7 @@ def main():
         adjust_learning_rate(optimizer, i + 1)
 
         for input_output_sequence in train_loader:
-            num_sequences = input_output_sequence[0][0].size()[0]
-
-            recurrent = rnn.init_recurrent(num_sequences)
-
-            for input_value, observed_output_value in input_output_sequence:
-                optimizer.zero_grad()
-                input_value = Variable(input_value).float()
-                observed_output_value = Variable(observed_output_value).float()
-
-                predicted_value, recurrent = rnn(input_value, recurrent)
-
-                loss = criterion(predicted_value, observed_output_value)
-                loss.backward(retain_variables=True)
-            optimizer.step()
+            rnn.m_train(input_output_sequence, optimizer, criterion)
 
         # Evaluate model and add to plot.
         train_loss = evaluate_rnn_model_on_dataset(rnn, criterion, train_dataset)
