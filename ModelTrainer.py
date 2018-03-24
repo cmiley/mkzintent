@@ -1,4 +1,6 @@
 import sys
+
+import os
 import torch.nn as nn
 
 import time
@@ -8,7 +10,6 @@ import logging
 from BVHReader import *
 from ModelEvaluationTools import *
 
-LOG_DIR = "logs/"
 
 LOSS_LOG_LEVEL = logging.INFO
 TIMING_LOG_LEVEL = logging.INFO
@@ -19,14 +20,22 @@ ITERATION_TITLE = "Iteration Graph"
 
 
 def main():
-    file_path_list = load_whitelist()[:50]
+    file_path_list = load_whitelist()[:5]
 
     # TODO: argparse
-    model_filename = "model.pkl"
+    directory_name = datetime.datetime.now().strftime("%Y-%m-%d_%H%M")
+
+    try:
+        os.makedirs(directory_name)
+    except OSError as e:
+        print(e.message)
+        exit()
+
+    model_file_path = os.path.join(directory_name, "model.pkl")
 
     logger = logging.getLogger("TrainingLogger")
     logger.setLevel(logging.DEBUG)
-    log_file_name = LOG_DIR + datetime.datetime.now().strftime("%Y-%m-%d_%H%M") + ".log"
+    log_file_name = os.path.join(directory_name, "training.log")
 
     fh = logging.FileHandler(log_file_name)
     fh.setLevel(logging.NOTSET)
@@ -103,8 +112,8 @@ def main():
 
     logger.debug("Completed training...")
     logger.info("End time: {}".format(datetime.datetime.now()))
-    logger.debug("Saving model to {}".format(model_filename))
-    torch.save(model, model_filename)
+    logger.debug("Saving model to {}".format(model_file_path))
+    torch.save(model, model_file_path)
 
     train_loss = evaluate_model_on_dataset(model, criterion, train_dataset)
     test_loss = evaluate_model_on_dataset(model, criterion, test_dataset)

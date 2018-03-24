@@ -116,8 +116,8 @@ def main():
 
     logger.debug("Starting training.")
 
-    for i in range(10):
-        logging.debug("Start of epoch {}".format(i + 1))
+    for i in range(2):
+        logging.info("Start of epoch {}".format(i + 1))
         start = time.time()
         adjust_learning_rate(optimizer, i + 1)
 
@@ -160,6 +160,7 @@ def main():
     logger.info("Training loss: {}\tTesting loss:{}".format(train_loss, test_loss))
 
     plotter.prepare_plots()
+    plotter.pickle_plots(directory_name)
     plotter.save_plots(directory_name)
     plotter.show_plot()
 

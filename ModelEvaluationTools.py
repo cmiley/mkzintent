@@ -1,8 +1,13 @@
+import pickle
 import torch.utils.data as data
 from torch.autograd import Variable
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+from matplotlib import rc
+
+# rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+# rc('text', usetex=True)
 
 
 def evaluate_model_on_dataset(model, criterion, dataset):
@@ -71,6 +76,15 @@ class Plotter:
             self.plot_values[title][name] = []
 
         self.plot_values[title][name].append(value)
+
+    def pickle_plots(self, path):
+        figs = []
+        for title in self.plot_values:
+            fig = plt.figure(title)
+            figs.append(fig)
+        print(figs)
+        with open(os.path.join(path, "plotting.pickle"), 'wb') as f:
+            pickle.dump(figs, f)
 
     def save_plots(self, path):
         for title in self.plot_values:
