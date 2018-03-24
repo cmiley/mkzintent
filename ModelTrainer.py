@@ -10,13 +10,40 @@ import logging
 from BVHReader import *
 from ModelEvaluationTools import *
 
-
-LOSS_LOG_LEVEL = logging.INFO
-TIMING_LOG_LEVEL = logging.INFO
-IO_LOG_LEVEL = logging.NOTSET
-
 LOSS_TITLE = "Loss Graph"
 ITERATION_TITLE = "Iteration Graph"
+
+
+class FeedForwardNet(nn.Module):
+    def __init__(self, input_size, output_size):
+        super(FeedForwardNet, self).__init__()
+
+        # Hidden layer size
+        h1, h2, h3 = 200, 150, 50
+        self.model = torch.nn.Sequential(
+            nn.Linear(input_size, h1),
+            nn.ReLU(),
+            nn.Linear(h1, h2),
+            nn.ReLU(),
+            nn.Linear(h2, h3),
+            nn.ReLU(),
+            nn.Linear(h3, output_size)
+        )
+
+    def forward(self, input_value):
+        return self.model(input_value)
+
+    def m_train(self, input_output_pairs, optimizer, criterion):
+        input_value, observed_output_value = input_output_pairs
+        optimizer.zero_grad()
+
+        input_value = Variable(input_value).float()
+        observed_output_value = Variable(observed_output_value).float()
+
+        predicted_value = self(input_value)
+        loss = criterion(predicted_value, observed_output_value)
+        loss.backward()
+        optimizer.step()
 
 
 def main():
@@ -33,22 +60,7 @@ def main():
 
     model_file_path = os.path.join(directory_name, "model.pkl")
 
-    logger = logging.getLogger("TrainingLogger")
-    logger.setLevel(logging.DEBUG)
-    log_file_name = os.path.join(directory_name, "training.log")
-
-    fh = logging.FileHandler(log_file_name)
-    fh.setLevel(logging.NOTSET)
-
-    ch = logging.StreamHandler(sys.stdout)
-    ch.setLevel(logging.INFO)
-
-    formatter = logging.Formatter('[%(asctime)s] - %(levelname)s: %(message)s')
-    fh.setFormatter(formatter)
-    ch.setFormatter(formatter)
-
-    logger.addHandler(fh)
-    logger.addHandler(ch)
+    logger = create_logger(directory_name)
 
     logger.info("Start time: {}".format(datetime.datetime.now()))
     logger.debug(str(len(file_path_list)) + " file names loaded.")
@@ -64,19 +76,7 @@ def main():
     train_loader = data.DataLoader(dataset=train_dataset, batch_size=2 ** 12, shuffle=True, num_workers=4)
 
     plotter = Plotter()
-
-    # Hidden layer size
-    h1, h2, h3 = 200, 150, 50
-    model = torch.nn.Sequential(
-        nn.Linear(NN_INPUT_SIZE, h1),
-        nn.ReLU(),
-        nn.Linear(h1, h2),
-        nn.ReLU(),
-        nn.Linear(h2, h3),
-        nn.ReLU(),
-        nn.Linear(h3, NN_OUTPUT_SIZE)
-    )
-
+    model = FeedForwardNet(NN_INPUT_SIZE, NN_OUTPUT_SIZE)
     criterion = nn.MSELoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 
@@ -86,16 +86,8 @@ def main():
         logging.debug("Start of epoch {}".format(i + 1))
         start = time.time()
         adjust_learning_rate(optimizer, i + 1)
-        for input_value, observed_output_value in train_loader:
-            optimizer.zero_grad()
-
-            input_value = Variable(input_value).float()
-            observed_output_value = Variable(observed_output_value).float()
-
-            predicted_value = model(input_value)
-            loss = criterion(predicted_value, observed_output_value)
-            loss.backward()
-            optimizer.step()
+        for input_output_pair in train_loader:
+            model.m_train(input_output_pair, optimizer, criterion)
 
         # Evaluate model and add to plot.
         train_loss = evaluate_model_on_dataset(model, criterion, train_dataset)
@@ -103,7 +95,7 @@ def main():
         plotter.record_value(LOSS_TITLE, "Training", train_loss)
         plotter.record_value(LOSS_TITLE, "Testing", test_loss)
 
-        t_delta = time.time()-start
+        t_delta = time.time() - start
 
         plotter.record_value(ITERATION_TITLE, "Iterations", t_delta)
 
@@ -112,6 +104,7 @@ def main():
 
     logger.debug("Completed training...")
     logger.info("End time: {}".format(datetime.datetime.now()))
+
     logger.debug("Saving model to {}".format(model_file_path))
     torch.save(model, model_file_path)
 
@@ -119,13 +112,10 @@ def main():
     test_loss = evaluate_model_on_dataset(model, criterion, test_dataset)
     logger.info("Training loss: {}\tTesting loss:{}".format(train_loss, test_loss))
 
+    plotter.prepare_plots()
+    plotter.pickle_plots(directory_name)
+    plotter.save_plots(directory_name)
     plotter.show_plot()
-
-
-def adjust_learning_rate(optimizer, epoch):
-    lr = (0.01 ** ((epoch + 3) // 3))
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = lr
 
 
 if __name__ == '__main__':
