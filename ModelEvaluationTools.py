@@ -8,8 +8,8 @@ import os
 import sys
 from matplotlib import rc
 
-# rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
-# rc('text', usetex=True)
+rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+rc('text', usetex=True)
 
 
 def evaluate_model_on_dataset(model, criterion, dataset):
@@ -101,8 +101,11 @@ def adjust_learning_rate(optimizer, epoch):
         param_group['lr'] = lr
 
 
-def create_logger(directory_name):
-    logger = logging.getLogger("TrainingLogger")
+def create_logger(log_name, directory_name):
+    if not os.path.exists(directory_name):
+        os.makedirs(directory_name)
+
+    logger = logging.getLogger(log_name)
     logger.setLevel(logging.DEBUG)
     log_file_name = os.path.join(directory_name, "training.log")
 

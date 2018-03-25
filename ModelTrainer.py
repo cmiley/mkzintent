@@ -60,7 +60,7 @@ def main():
 
     model_file_path = os.path.join(directory_name, "model.pkl")
 
-    logger = create_logger(directory_name)
+    logger = create_logger("Training logger", directory_name)
 
     logger.info("Start time: {}".format(datetime.datetime.now()))
     logger.debug(str(len(file_path_list)) + " file names loaded.")
@@ -76,7 +76,7 @@ def main():
     train_loader = data.DataLoader(dataset=train_dataset, batch_size=2 ** 12, shuffle=True, num_workers=4)
 
     plotter = Plotter()
-    model = FeedForwardNet(NN_INPUT_SIZE, NN_OUTPUT_SIZE)
+    model = FeedForwardNet(conf.NN_INPUT_SIZE, conf.NN_OUTPUT_SIZE)
     criterion = nn.MSELoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
 

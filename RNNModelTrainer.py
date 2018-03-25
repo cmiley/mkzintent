@@ -88,15 +88,15 @@ def main():
 
     save_test_train_split(directory_name, train_file_list, test_file_list)
 
-    train_dataset = BVHRNNDataset(train_file_list, RNN_SEQUENCE_SIZE)
-    test_dataset = BVHRNNDataset(test_file_list, RNN_SEQUENCE_SIZE)
+    train_dataset = BVHRNNDataset(train_file_list, conf.RNN_SEQUENCE_SIZE)
+    test_dataset = BVHRNNDataset(test_file_list, conf.RNN_SEQUENCE_SIZE)
     logger.debug("Data has been indexed.")
 
     train_loader = data.DataLoader(dataset=train_dataset, batch_size=2 ** 12, shuffle=True, num_workers=4)
 
     plotter = Plotter()
 
-    rnn = RNN(NN_INPUT_SIZE, RNN_RECURRENT_SIZE, NN_OUTPUT_SIZE)
+    rnn = RNN(conf.NN_INPUT_SIZE, conf.RNN_RECURRENT_SIZE, conf.NN_OUTPUT_SIZE)
 
     criterion = nn.MSELoss()
     # optimizer = torch.optim.SGD(model.parameters(), lr=0.01)

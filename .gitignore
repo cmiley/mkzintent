@@ -5,3 +5,4 @@ bvh_testdata
 *.txt
 .idea
 logs
+white_list

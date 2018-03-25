@@ -59,7 +59,7 @@ for pose, delta in data_loader:
 logging.info("Loading positions")
 with open(bvh_filename) as f:
     bvh_data = Bvh(f.read())
-for frame in bvh_data.frames[NUM_INVALID_FRAMES:-NUM_FRAMES_LOOK_AHEAD]:
+for frame in bvh_data.frames[conf.NUM_INVALID_FRAMES:-conf.NUM_FRAMES_LOOK_AHEAD]:
     pos = [float(val) for val in frame[:3]]
     positions.append(pos)
 
