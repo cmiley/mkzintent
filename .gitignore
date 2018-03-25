@@ -3,4 +3,5 @@ bvh_testdata
 *.pkl
 *.vdata
 *.txt
+.idea
 logs

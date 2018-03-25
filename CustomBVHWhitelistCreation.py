@@ -6,10 +6,7 @@ import torch.nn as nn
 import torch.utils.data as data
 import numpy as np
 from torch.autograd import Variable
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 from bvh import *
-import time
 import os
 
 
