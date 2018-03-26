@@ -6,3 +6,4 @@ bvh_testdata
 .idea
 logs
 white_list
+*.log

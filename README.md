@@ -18,4 +18,5 @@ Follow the instructions at [PyTorch](http://pytorch.org/). Make sure to specify 
 ### Python Dependencies
 ```bash
 sudo pip install bvh matplotlib
+sudo apt-get install msttcorefonts -qq
 ```

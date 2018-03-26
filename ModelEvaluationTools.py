@@ -107,7 +107,7 @@ def create_logger(log_name, directory_name):
 
     logger = logging.getLogger(log_name)
     logger.setLevel(logging.DEBUG)
-    log_file_name = os.path.join(directory_name, "training.log")
+    log_file_name = os.path.join(directory_name, log_name + ".log")
 
     fh = logging.FileHandler(log_file_name)
     fh.setLevel(logging.NOTSET)

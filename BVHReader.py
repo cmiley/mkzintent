@@ -104,7 +104,7 @@ class BVHRNNDataset(data.Dataset):
 # TODO Argparse whitelist.txt
 def load_whitelist():
     paths = []
-    with open("white_list.txt", 'r') as f:
+    with open(conf.WHITE_LIST_FILE, 'r') as f:
         lines = f.readlines()
     for line in lines:
         line = line.strip()

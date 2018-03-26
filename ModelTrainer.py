@@ -1,11 +1,7 @@
-import sys
-
-import os
 import torch.nn as nn
 
 import time
 import datetime
-import logging
 
 from BVHReader import *
 from ModelEvaluationTools import *
@@ -47,7 +43,8 @@ class FeedForwardNet(nn.Module):
 
 
 def main():
-    file_path_list = load_whitelist()[:5]
+    # change this to the number of file entries to be loaded
+    file_path_list = load_whitelist()[:500]
 
     # TODO: argparse
     directory_name = datetime.datetime.now().strftime("%Y-%m-%d_%H%M")
@@ -82,7 +79,7 @@ def main():
 
     logger.debug("Starting training.")
 
-    for i in range(10):
+    for i in range(conf.NUM_EPOCHS):
         logging.debug("Start of epoch {}".format(i + 1))
         start = time.time()
         adjust_learning_rate(optimizer, i + 1)

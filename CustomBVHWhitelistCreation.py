@@ -9,7 +9,7 @@ from torch.autograd import Variable
 from bvh import *
 import os
 import ModelEvaluationTools as met
-import MKZIntentConf.py as conf
+import MKZIntentConf as conf
 
 
 class BVHDataset(data.Dataset):
@@ -22,22 +22,23 @@ class BVHDataset(data.Dataset):
                 bvh_data = Bvh(f.read())
 
             # One extra frame is discarded at the end
-            num_samples = bvh_data.nframes - (conf.NUM_INVALID_FRAMES + conf.NUM_FRAMES_LOOK_AHEAD)
+            num_samples = bvh_data.nframes - (conf.NUM_INVALID_FRAMES + conf.SAMPLE_LOOK_AHEAD)
 
-            for file_index in range(conf.NUM_INVALID_FRAMES, num_samples + conf.NUM_FRAMES_LOOK_AHEAD):
+            for file_index in range(conf.NUM_INVALID_FRAMES, num_samples + conf.SAMPLE_LOOK_AHEAD):
                 bvh_data.frames[file_index] = map(float, bvh_data.frames[file_index])
-                bvh_data.frames[file_index+conf.NUM_FRAMES_LOOK_AHEAD] = map(float, bvh_data.frames[file_index+conf.NUM_FRAMES_LOOK_AHEAD])
+                bvh_data.frames[file_index+conf.SAMPLE_LOOK_AHEAD] = \
+                    map(float, bvh_data.frames[file_index+conf.SAMPLE_LOOK_AHEAD])
 
                 pose = np.asarray(bvh_data.frames[file_index][conf.NN_OUTPUT_SIZE:])
                 initial = np.asarray(bvh_data.frames[file_index][:conf.NN_OUTPUT_SIZE])
-                final = np.asarray(bvh_data.frames[file_index+conf.NUM_FRAMES_LOOK_AHEAD][:conf.NN_OUTPUT_SIZE])
+                final = np.asarray(bvh_data.frames[file_index+conf.SAMPLE_LOOK_AHEAD][:conf.NN_OUTPUT_SIZE])
                 delta = final - initial
                 self.data.append((initial, pose, delta))
 
         self.length = len(self.data)
         
     def __getitem__(self, index):
-        positiion, pose, delta = self.data[index]
+        position, pose, delta = self.data[index]
         observed_output_data = torch.from_numpy(delta).float()
         input_data = torch.from_numpy(pose).float()
 
@@ -48,9 +49,10 @@ class BVHDataset(data.Dataset):
 
     
 def main():
+    logger = met.create_logger("whitelist_logger", conf.WHITE_LIST_LOG)
     white_list = []
 
-    for root, dirs, files in os.walk("bvh_testdata/bvh_conversion/cmu_bvh"):
+    for root, dirs, files in os.walk(conf.DATA_DIR):
         for name in files:
             if name.endswith(".bvh") and check_for_nan(os.path.join(root, name)):
                 white_list.append(os.path.join(root, name))
@@ -61,22 +63,22 @@ def main():
 
 
 def check_for_nan(file_name):
-    logger = met.create_logger("Whitelist logger", "whitelist_log")
+    logger = met.create_logger("whitelist_logger", conf.WHITE_LIST_LOG)
 
     m_dataset = BVHDataset([file_name])
 
-    data_loader = data.DataLoader(dataset=m_dataset, batch_size=32, shuffle=True)
+    data_loader = data.DataLoader(dataset=m_dataset, batch_size=conf.BATCH_SIZE, shuffle=True)
 
     # Hidden layer size
     h1, h2, h3 = 200, 150, 50
     model = torch.nn.Sequential(
-        nn.Linear(conf.NN_INPUT_SIZE,h1),
+        nn.Linear(conf.NN_INPUT_SIZE, h1),
         nn.ReLU(),
-        nn.Linear(h1,h2),
+        nn.Linear(h1, h2),
         nn.ReLU(),
-        nn.Linear(h2,h3),
+        nn.Linear(h2, h3),
         nn.ReLU(),
-        nn.Linear(h3,conf.NN_OUTPUT_SIZE)
+        nn.Linear(h3, conf.NN_OUTPUT_SIZE)
     )
 
     criterion = nn.MSELoss()
