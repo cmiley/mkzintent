@@ -64,7 +64,7 @@ class RNN(nn.Module):
 
 
 def main():
-    file_path_list = load_whitelist()[:5]
+    file_path_list = load_whitelist()
 
     directory_name = datetime.datetime.now().strftime("%Y-%m-%d_%H%M")
 
@@ -99,15 +99,16 @@ def main():
     rnn = RNN(NN_INPUT_SIZE, RNN_RECURRENT_SIZE, NN_OUTPUT_SIZE)
 
     criterion = nn.MSELoss()
-    # optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+
     optimizer = torch.optim.Adam(rnn.parameters(), lr=0.01)
 
     logger.debug("Starting training.")
 
-    for i in range(2):
-        logging.info("Start of epoch {}".format(i + 1))
+    num_epochs = 100
+    for epoch in range(num_epochs):
+        logging.info("Start of epoch {}".format(epoch + 1))
         start = time.time()
-        adjust_learning_rate(optimizer, i + 1)
+        adjust_learning_rate(optimizer, epoch + 1)
 
         for input_output_sequence in train_loader:
             rnn.m_train(input_output_sequence, optimizer, criterion)
