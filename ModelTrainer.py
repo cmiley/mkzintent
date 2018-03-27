@@ -82,10 +82,11 @@ def main():
 
     logger.debug("Starting training.")
 
-    for i in range(10):
-        logging.debug("Start of epoch {}".format(i + 1))
+    num_epochs = 10
+    for epoch in range(num_epochs):
+        logging.debug("Start of epoch {}".format(epoch + 1))
         start = time.time()
-        adjust_learning_rate(optimizer, i + 1)
+        adjust_learning_rate(optimizer, epoch + 1)
         for input_output_pair in train_loader:
             model.m_train(input_output_pair, optimizer, criterion)
 
