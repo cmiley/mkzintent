@@ -76,7 +76,7 @@ logging.info("Writing to file")
 with open(output_filename, "w+") as f:
     f.write(str(num_frames) + "\n")
     f.write(str(NUM_FRAMES_LOOK_AHEAD) + "\n")
-    f.write(bvh_filename + "\n")
+    f.write("../" + bvh_filename + "\n")
     for i in range(len(positions)):
         to_write = list(positions[i]) + list(predicted_deltas[i])
         f.write(" ".join(map(str, to_write)))
