@@ -33,10 +33,9 @@ class BVHDataset(data.Dataset):
             with open(file_path) as f:
                 bvh_data = Bvh(f.read())
 
+            bvh_data.frames = convert_frames_to_float(bvh_data.frames)
+
             for file_index in range(NUM_INVALID_FRAMES, bvh_data.nframes - NUM_FRAMES_LOOK_AHEAD):
-                bvh_data.frames[file_index] = map(float, bvh_data.frames[file_index])
-                bvh_data.frames[file_index + NUM_FRAMES_LOOK_AHEAD] = map(float, bvh_data.frames[
-                    file_index + NUM_FRAMES_LOOK_AHEAD])
 
                 pose = np.asarray(bvh_data.frames[file_index][NN_OUTPUT_SIZE:])
                 initial = np.asarray(bvh_data.frames[file_index][:NN_OUTPUT_SIZE])
@@ -70,11 +69,9 @@ class BVHRNNDataset(data.Dataset):
             with open(file_path) as f:
                 bvh_data = Bvh(f.read())
 
-            for file_index in range(NUM_INVALID_FRAMES, bvh_data.nframes - NUM_FRAMES_LOOK_AHEAD):
-                bvh_data.frames[file_index] = map(float, bvh_data.frames[file_index])
-                bvh_data.frames[file_index + NUM_FRAMES_LOOK_AHEAD] = map(float, bvh_data.frames[
-                    file_index + NUM_FRAMES_LOOK_AHEAD])
+            bvh_data.frames = convert_frames_to_float(bvh_data.frames)
 
+            for file_index in range(NUM_INVALID_FRAMES, bvh_data.nframes - NUM_FRAMES_LOOK_AHEAD):
                 pose = np.asarray(bvh_data.frames[file_index][NN_OUTPUT_SIZE:])
                 initial = np.asarray(bvh_data.frames[file_index][:NN_OUTPUT_SIZE])
                 final = np.asarray(bvh_data.frames[file_index + NUM_FRAMES_LOOK_AHEAD][:NN_OUTPUT_SIZE])
