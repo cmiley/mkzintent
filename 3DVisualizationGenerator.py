@@ -19,7 +19,7 @@ parser.add_argument('--model_filename',
 parser.add_argument('--bvh_filename',
                     type=str,
                     required=False,
-                    default="bvh_testdata/bvh_conversion/cmu_bvh/137/137_16.bvh",
+                    default="../bvh_testdata/bvh_conversion/cmu_bvh/137/137_16.bvh",
                     help='Name of bvh file.'
                     )
 parser.add_argument('--output_filename',
@@ -76,7 +76,7 @@ logging.info("Writing to file")
 with open(output_filename, "w+") as f:
     f.write(str(num_frames) + "\n")
     f.write(str(NUM_FRAMES_LOOK_AHEAD) + "\n")
-    f.write("../" + bvh_filename + "\n")
+    f.write(bvh_filename + "\n")
     for i in range(len(positions)):
         to_write = list(positions[i]) + list(predicted_deltas[i])
         f.write(" ".join(map(str, to_write)))
