@@ -1,6 +1,8 @@
-'''#######################################################
+'''
+#######################################################
 IMPORTS
-'''  #######################################################
+#######################################################
+'''
 import torch
 import torch.utils.data as data
 import numpy as np
@@ -17,10 +19,9 @@ class BVHDataset(data.Dataset):
             with open(file_path) as f:
                 bvh_data = Bvh(f.read())
 
-            for file_index in range(conf.NUM_INVALID_FRAMES, bvh_data.nframes - conf.NUM_FRAMES_LOOK_AHEAD):
-                bvh_data.frames[file_index] = map(float, bvh_data.frames[file_index])
-                bvh_data.frames[file_index + conf.NUM_FRAMES_LOOK_AHEAD] = map(float, bvh_data.frames[
-                    file_index + conf.NUM_FRAMES_LOOK_AHEAD])
+            bvh_data.frames = convert_frames_to_float(bvh_data.frames)
+
+            for file_index in range(NUM_INVALID_FRAMES, bvh_data.nframes - NUM_FRAMES_LOOK_AHEAD):
 
                 pose = np.asarray(bvh_data.frames[file_index][conf.NN_OUTPUT_SIZE:])
                 initial = np.asarray(bvh_data.frames[file_index][:conf.NN_OUTPUT_SIZE])
@@ -54,11 +55,9 @@ class BVHRNNDataset(data.Dataset):
             with open(file_path) as f:
                 bvh_data = Bvh(f.read())
 
-            for file_index in range(conf.NUM_INVALID_FRAMES, bvh_data.nframes - conf.NUM_FRAMES_LOOK_AHEAD):
-                bvh_data.frames[file_index] = map(float, bvh_data.frames[file_index])
-                bvh_data.frames[file_index + conf.NUM_FRAMES_LOOK_AHEAD] = map(float, bvh_data.frames[
-                    file_index + conf.NUM_FRAMES_LOOK_AHEAD])
+            bvh_data.frames = convert_frames_to_float(bvh_data.frames)
 
+            for file_index in range(conf.NUM_INVALID_FRAMES, bvh_data.nframes - conf.NUM_FRAMES_LOOK_AHEAD):
                 pose = np.asarray(bvh_data.frames[file_index][conf.NN_OUTPUT_SIZE:])
                 initial = np.asarray(bvh_data.frames[file_index][:conf.NN_OUTPUT_SIZE])
                 final = np.asarray(bvh_data.frames[file_index + conf.NUM_FRAMES_LOOK_AHEAD][:conf.NN_OUTPUT_SIZE])
@@ -87,7 +86,7 @@ class BVHRNNDataset(data.Dataset):
         return_sequence = []
         # Loop over some sequence length to get multiple pose/output pairs
         start_index = self.get_index(index)
-        for i in range(start_index, start_index+self.sequence_size):
+        for i in range(start_index, start_index + self.sequence_size):
             position, pose, delta = self.data[i]
             observed_output_data = torch.from_numpy(delta).float()
             input_data = torch.from_numpy(pose).float()
@@ -99,6 +98,49 @@ class BVHRNNDataset(data.Dataset):
 
     def __len__(self, ):
         return self.length
+
+
+class BVHDatasetDeltas(data.Dataset):
+
+    def __init__(self, file_paths):
+        self.data = []
+
+        for file_path in file_paths:
+            with open(file_path) as f:
+                bvh_data = Bvh(f.read())
+
+            bvh_data.frames = convert_frames_to_float(bvh_data.frames)
+
+            for file_index in range(NUM_INVALID_FRAMES+NUM_FRAMES_LOOK_BEHIND, bvh_data.nframes - NUM_FRAMES_LOOK_AHEAD):
+
+                pose = np.asarray(bvh_data.frames[file_index][NN_OUTPUT_SIZE:])
+                prior = np.asarray(bvh_data.frames[file_index - NUM_FRAMES_LOOK_BEHIND][:NN_OUTPUT_SIZE])
+                current = np.asarray(bvh_data.frames[file_index][:NN_OUTPUT_SIZE])
+                final = np.asarray(bvh_data.frames[file_index + NUM_FRAMES_LOOK_AHEAD][:NN_OUTPUT_SIZE])
+                delta_future = final - current
+                delta_prior = (current - prior)/(bvh_data.frame_time*NUM_FRAMES_LOOK_BEHIND)
+                pose_with_delta = np.hstack((pose, delta_prior))
+                self.data.append((current, pose_with_delta, delta_future))
+
+        self.length = len(self.data)
+
+    def __getitem__(self, index):
+        position, pose, delta = self.data[index]
+        observed_output_data = torch.from_numpy(delta).float()
+        input_data = torch.from_numpy(pose).float()
+
+        return input_data, observed_output_data
+
+    def __len__(self, ):
+        return self.length
+
+
+# Converts an array of frames stored as strings to an array of frames stored as floats.
+# Returns the modified array.
+def convert_frames_to_float(frames):
+    for frame_num in range(len(frames)):
+        frames[frame_num] = map(float, frames[frame_num])
+    return frames
 
 
 # TODO Argparse whitelist.txt

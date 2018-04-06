@@ -19,7 +19,7 @@ parser.add_argument('--model_filename',
 parser.add_argument('--bvh_filename',
                     type=str,
                     required=False,
-                    default="bvh_testdata/bvh_conversion/cmu_bvh/137/137_16.bvh",
+                    default="../bvh_testdata/bvh_conversion/cmu_bvh/137/137_16.bvh",
                     help='Name of bvh file.'
                     )
 parser.add_argument('--output_filename',
@@ -38,7 +38,7 @@ model_filename = args.model_filename
 # Load model and initialize dataset
 model = torch.load(model_filename)
 file_path_list = [bvh_filename]
-m_dataset = BVHDataset(file_path_list)
+m_dataset = BVHDatasetDeltas(file_path_list)
 num_frames = len(m_dataset)
 logging.info("{} frames loaded.".format(num_frames))
 
@@ -51,15 +51,15 @@ positions = []
 # Predict Deltas
 logging.info("Predicting Deltas")
 for pose, delta in data_loader:
-    pose = Variable(pose).float()
-    pred = model(pose).data.numpy()[0]
+    pose = Variable(pose).float().cuda()
+    pred = model(pose).data.cpu().numpy()[0]
     predicted_deltas.append(pred)
 
 # Load positions
 logging.info("Loading positions")
 with open(bvh_filename) as f:
     bvh_data = Bvh(f.read())
-for frame in bvh_data.frames[conf.NUM_INVALID_FRAMES:-conf.NUM_FRAMES_LOOK_AHEAD]:
+for frame in bvh_data.frames[conf.NUM_INVALID_FRAMES+conf.NUM_FRAMES_LOOK_BEHIND:-conf.NUM_FRAMES_LOOK_AHEAD]:
     pos = [float(val) for val in frame[:3]]
     positions.append(pos)
 
@@ -67,7 +67,7 @@ logging.info("Verifying list lengths.")
 try:
     assert (len(positions) == len(predicted_deltas))
 except:
-    logging.ERROR(
+    logging.error(
         "Number of positions and predictions do not match! {}=/={}".format(len(positions), len(predicted_deltas))
     )
     exit()
@@ -75,6 +75,7 @@ except:
 logging.info("Writing to file")
 with open(output_filename, "w+") as f:
     f.write(str(num_frames) + "\n")
+    f.write(str(NUM_FRAMES_LOOK_AHEAD) + "\n")
     f.write(bvh_filename + "\n")
     for i in range(len(positions)):
         to_write = list(positions[i]) + list(predicted_deltas[i])

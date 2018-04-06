@@ -15,13 +15,13 @@ parser = argparse.ArgumentParser(
 parser.add_argument('--model_filename',
                     type=str,
                     required=False,
-                    default="rnn-model.pkl",
+                    default="model.pkl",
                     help='Name of file with network model.'
                     )
 parser.add_argument('--bvh_filename',
                     type=str,
                     required=False,
-                    default="bvh_testdata/bvh_conversion/cmu_bvh/137/137_16.bvh",
+                    default="../bvh_testdata/bvh_conversion/cmu_bvh/137/137_16.bvh",
                     help='Name of bvh file.'
                     )
 parser.add_argument('--output_filename',
