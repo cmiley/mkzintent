@@ -15,7 +15,7 @@ class FeedForwardNet(nn.Module):
         super(FeedForwardNet, self).__init__()
 
         # Hidden layer size
-        h1, h2, h3 = 200, 150, 50
+        h1, h2, h3, h4 = 800, 650, 450, 250
         self.model = torch.nn.Sequential(
             nn.Linear(input_size, h1),
             nn.ReLU(),
@@ -23,7 +23,10 @@ class FeedForwardNet(nn.Module):
             nn.ReLU(),
             nn.Linear(h2, h3),
             nn.ReLU(),
-            nn.Linear(h3, output_size)
+            nn.Linear(h3, h4),
+            nn.Dropout(),
+            nn.ReLU(),
+            nn.Linear(h4, output_size)
         )
         nn.DataParallel(self.model)
 
@@ -44,7 +47,7 @@ class FeedForwardNet(nn.Module):
 
 
 def main():
-    file_path_list = load_whitelist()[:5]
+    file_path_list = load_whitelist()
 
     # TODO: argparse
     directory_name = datetime.datetime.now().strftime("%Y-%m-%d_%H%M")
@@ -80,15 +83,16 @@ def main():
     model = FeedForwardNet(NN_INPUT_SIZE+3, NN_OUTPUT_SIZE)
     model.cuda()
     criterion = nn.MSELoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+    initial_lr = 0.008
+    optimizer = torch.optim.Adam(model.parameters(), lr=initial_lr)
 
     logger.debug("Starting training.")
 
     current_avg = 0
 
-    num_epochs = 2
+    num_epochs = 850
     for epoch in range(num_epochs):
-        logging.debug("Start of epoch {}".format(epoch + 1))
+        logger.info("Start of epoch {}".format(epoch + 1))
         start = time.time()
         adjust_learning_rate(optimizer, epoch, initial=initial_lr, decay=0.99, interval=20)
         for input_output_pair in train_loader:
