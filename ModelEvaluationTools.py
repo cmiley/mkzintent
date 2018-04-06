@@ -93,9 +93,15 @@ class Plotter:
             plt.savefig(os.path.join(path, title + ".png"), bbox_inches='tight')
 
 
-def adjust_learning_rate(optimizer, epoch):
+# def adjust_learning_rate(optimizer, epoch):
+#     # TODO: make these parameters ( potentially make a class )
+#     lr = (0.01 * (0.9 ** (epoch // 3)))
+#     for param_group in optimizer.param_groups:
+#         param_group['lr'] = lr
+
+def adjust_learning_rate(optimizer, epoch, initial=0.01, decay=0.8, interval=10):
     # TODO: make these parameters ( potentially make a class )
-    lr = (0.01 * (0.6 ** (epoch // 3)))
+    lr = (initial * (decay ** (epoch // interval)))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
