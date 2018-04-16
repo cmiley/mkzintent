@@ -27,7 +27,7 @@ def main():
         data.append(list(map(float, line.split(" "))))
 
 
-    # CUBE: Actual Position
+    # CUBE: actual position of hips
     bpy.ops.mesh.primitive_cube_add(radius=0.5, location=(0, 0, 0))
     cube = bpy.context.object
     cube.name = 'Cube'
