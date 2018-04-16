@@ -2,6 +2,7 @@ import bpy
 import os
 
 def main():
+    # Clear objects from scene
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
 
@@ -28,7 +29,9 @@ def main():
 
 
     # CUBE: Actual Position
-    bpy.ops.mesh.primitive_cube_add(radius=0.5, location=(0, 0, 0))
+    # bpy.ops.mesh.primitive_cube_add(radius=0.5, location=(0, 0, 0))
+    bpy.ops.mesh.primitive_cone_add(radius1=1, radius2=0, depth=2, location=(0, 0, 0))
+
     cube = bpy.context.object
     cube.name = 'Cube'
     bpy.context.scene.frame_current = 2
@@ -44,7 +47,7 @@ def main():
         bpy.context.scene.frame_current += 1
 
     # SPHERE: Predicted Position
-    bpy.ops.mesh.primitive_ico_sphere_add(size=0.5, location=(0, 0, 0))
+    bpy.ops.mesh.primitive_ico_sphere_add(size=.75, location=(0, 0, 0))
     sphere = bpy.context.object
     sphere.name = 'Sphere'
     bpy.context.scene.frame_current = 2
@@ -64,12 +67,14 @@ def main():
     bpy.context.scene.frame_current = 0
 
     # make predicted red
-    red = makeMaterial('Red', (1, 0, 0), (1, 1, 1), 1)
-    setMaterial(sphere, red)
+    # blue = makeMaterial('Blue', (0, .5, 1), (1, 1, 1), 1)
+    blue = makeMaterial('Blue', (1, 0, 0), (1, 1, 1), 1)
+    setMaterial(sphere, blue)
 
     # make actual green
-    green = makeMaterial('Green', (0, 1, 0), (1, 1, 1), 1)
-    setMaterial(cube, green)
+    # orange = makeMaterial('Orange', (1, .5, 0), (1, 1, 1), 1)
+    orange = makeMaterial('Orange', (0, 1, 0), (1, 1, 1), 1)
+    setMaterial(cube, orange)
 
 
 def makeMaterial(name, diffuse, specular, alpha):

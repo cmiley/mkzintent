@@ -6,9 +6,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 import sys
-
-rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
-rc('text', usetex=True)
+# from matplotlib import rc
+#
+# rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+# rc('text', usetex=True)
 
 
 def evaluate_model_on_dataset(model, criterion, loader):
