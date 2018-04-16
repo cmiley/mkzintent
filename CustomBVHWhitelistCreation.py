@@ -1,6 +1,8 @@
-'''#######################################################
+'''
+#######################################################
 IMPORTS
-'''#######################################################
+#######################################################
+'''
 import torch
 import torch.nn as nn
 import torch.utils.data as data
@@ -10,6 +12,9 @@ from bvh import *
 import os
 import ModelEvaluationTools as met
 import MKZIntentConf as conf
+
+
+logger = met.create_logger("whitelist_logger", conf.WHITE_LIST_LOG)
 
 
 class BVHDataset(data.Dataset):
@@ -49,7 +54,6 @@ class BVHDataset(data.Dataset):
 
     
 def main():
-    logger = met.create_logger("whitelist_logger", conf.WHITE_LIST_LOG)
     white_list = []
 
     for root, dirs, files in os.walk(conf.DATA_DIR):
@@ -63,7 +67,6 @@ def main():
 
 
 def check_for_nan(file_name):
-    logger = met.create_logger("whitelist_logger", conf.WHITE_LIST_LOG)
 
     m_dataset = BVHDataset([file_name])
 
@@ -82,7 +85,7 @@ def check_for_nan(file_name):
     )
 
     criterion = nn.MSELoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.001)
 
     for i in range(10):
         for input_value, observed_output_value in data_loader:
@@ -97,7 +100,7 @@ def check_for_nan(file_name):
             loss.backward()
             optimizer.step()
             if np.isnan(loss_average):
-                logger.debug('Failure at ' + file_name)
+                logger.info('Failure at ' + file_name)
                 return False
     logger.info('File success at ' + file_name)
     return True

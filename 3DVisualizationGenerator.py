@@ -6,6 +6,7 @@ from torch.autograd import Variable
 from BVHReader import *
 from bvh import *
 import argparse
+from ModelTrainer import FeedForwardNet
 
 parser = argparse.ArgumentParser(
     description='Runs a trained model on a bvh file to generate a blender visualization file.'
@@ -75,7 +76,7 @@ except:
 logging.info("Writing to file")
 with open(output_filename, "w+") as f:
     f.write(str(num_frames) + "\n")
-    f.write(str(NUM_FRAMES_LOOK_AHEAD) + "\n")
+    f.write(str(conf.NUM_FRAMES_LOOK_AHEAD) + "\n")
     f.write(bvh_filename + "\n")
     for i in range(len(positions)):
         to_write = list(positions[i]) + list(predicted_deltas[i])

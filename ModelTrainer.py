@@ -1,4 +1,5 @@
 import torch.nn as nn
+from torchviz import make_dot
 
 import time
 import datetime
@@ -15,7 +16,7 @@ class FeedForwardNet(nn.Module):
         super(FeedForwardNet, self).__init__()
 
         # Hidden layer size
-        h1, h2, h3, h4 = 800, 650, 450, 250
+        h1, h2, h3, h4, h5 = 1800, 1650, 450, 250, 200
         self.model = torch.nn.Sequential(
             nn.Linear(input_size, h1),
             nn.ReLU(),
@@ -24,11 +25,14 @@ class FeedForwardNet(nn.Module):
             nn.Linear(h2, h3),
             nn.ReLU(),
             nn.Linear(h3, h4),
+            nn.ReLU(),
+            nn.Linear(h4, h5),
             nn.Dropout(),
             nn.ReLU(),
-            nn.Linear(h4, output_size)
+            nn.Linear(h5, output_size)
         )
-        nn.DataParallel(self.model)
+        # nn.DataParallel(self.model)
+        self.model.cuda()
 
     def forward(self, input_value):
         return self.model(input_value)
@@ -45,17 +49,18 @@ class FeedForwardNet(nn.Module):
         loss.backward()
         optimizer.step()
 
+# def m_loss(input, target):
+#     return (target-input)**2
 
 def main():
-    file_path_list = load_whitelist()
+    file_path_list = load_whitelist()[:10]
 
-    # TODO: argparse
     directory_name = datetime.datetime.now().strftime("%Y-%m-%d_%H%M")
 
     try:
         os.makedirs(directory_name)
     except OSError as e:
-        print("ERROR:"+ e.message + " " + e.strerror)
+        print("ERROR:" + e.message + " " + e.strerror)
         exit()
 
     model_file_path = os.path.join(directory_name, "model.pkl")
@@ -82,6 +87,7 @@ def main():
     plotter = Plotter()
     model = FeedForwardNet(conf.NN_INPUT_SIZE + 3, conf.NN_OUTPUT_SIZE)
     criterion = nn.MSELoss()
+    # criterion = m_loss
     initial_lr = 0.008
     optimizer = torch.optim.Adam(model.parameters(), lr=initial_lr)
 
@@ -111,7 +117,7 @@ def main():
         logger.info("Time for iteration {}".format(t_delta))
 
         current_avg = ((current_avg*epoch) + t_delta)/(epoch+1)
-        est_end_time = datetime.datetime.now() + datetime.timedelta(seconds=current_avg*(num_epochs-epoch))
+        est_end_time = datetime.datetime.now() + datetime.timedelta(seconds=current_avg*(conf.NUM_EPOCHS-epoch))
 
         logger.info("Estimated time to finish: {}".format(est_end_time))
 
@@ -124,6 +130,8 @@ def main():
     train_loss = evaluate_model_on_dataset(model, criterion, train_eval_loader)
     test_loss = evaluate_model_on_dataset(model, criterion, test_eval_loader)
     logger.info("Training loss: {}\tTesting loss:{}".format(train_loss, test_loss))
+
+    make_dot(model(Variable(torch.randn(1, 96)).cuda()).mean(), params=dict(model.named_parameters()))
 
     plotter.prepare_plots()
     plotter.pickle_plots(directory_name)

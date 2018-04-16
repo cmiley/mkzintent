@@ -21,7 +21,7 @@ class BVHDataset(data.Dataset):
 
             bvh_data.frames = convert_frames_to_float(bvh_data.frames)
 
-            for file_index in range(NUM_INVALID_FRAMES, bvh_data.nframes - NUM_FRAMES_LOOK_AHEAD):
+            for file_index in range(conf.NUM_INVALID_FRAMES, bvh_data.nframes - conf.NUM_FRAMES_LOOK_AHEAD):
 
                 pose = np.asarray(bvh_data.frames[file_index][conf.NN_OUTPUT_SIZE:])
                 initial = np.asarray(bvh_data.frames[file_index][:conf.NN_OUTPUT_SIZE])
@@ -111,14 +111,14 @@ class BVHDatasetDeltas(data.Dataset):
 
             bvh_data.frames = convert_frames_to_float(bvh_data.frames)
 
-            for file_index in range(NUM_INVALID_FRAMES+NUM_FRAMES_LOOK_BEHIND, bvh_data.nframes - NUM_FRAMES_LOOK_AHEAD):
+            for file_index in range(conf.NUM_INVALID_FRAMES+conf.NUM_FRAMES_LOOK_BEHIND, bvh_data.nframes - conf.NUM_FRAMES_LOOK_AHEAD):
 
-                pose = np.asarray(bvh_data.frames[file_index][NN_OUTPUT_SIZE:])
-                prior = np.asarray(bvh_data.frames[file_index - NUM_FRAMES_LOOK_BEHIND][:NN_OUTPUT_SIZE])
-                current = np.asarray(bvh_data.frames[file_index][:NN_OUTPUT_SIZE])
-                final = np.asarray(bvh_data.frames[file_index + NUM_FRAMES_LOOK_AHEAD][:NN_OUTPUT_SIZE])
+                pose = np.asarray(bvh_data.frames[file_index][conf.NN_OUTPUT_SIZE:])
+                prior = np.asarray(bvh_data.frames[file_index - conf.NUM_FRAMES_LOOK_BEHIND][:conf.NN_OUTPUT_SIZE])
+                current = np.asarray(bvh_data.frames[file_index][:conf.NN_OUTPUT_SIZE])
+                final = np.asarray(bvh_data.frames[file_index + conf.NUM_FRAMES_LOOK_AHEAD][:conf.NN_OUTPUT_SIZE])
                 delta_future = final - current
-                delta_prior = (current - prior)/(bvh_data.frame_time*NUM_FRAMES_LOOK_BEHIND)
+                delta_prior = (current - prior)/(bvh_data.frame_time*conf.NUM_FRAMES_LOOK_BEHIND)
                 pose_with_delta = np.hstack((pose, delta_prior))
                 self.data.append((current, pose_with_delta, delta_future))
 
