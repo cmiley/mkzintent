@@ -10,8 +10,8 @@ import numpy as np
 from torch.autograd import Variable
 from bvh import *
 import os
-import ModelEvaluationTools as met
-import MKZIntentConf as conf
+import mkzintent.src.ModelEvaluationTools as met
+import mkzintent.src.MKZIntentConf as conf
 
 
 logger = met.create_logger("whitelist_logger", conf.WHITE_LIST_LOG)
@@ -61,7 +61,7 @@ def main():
             if name.endswith(".bvh") and check_for_nan(os.path.join(root, name)):
                 white_list.append(os.path.join(root, name))
 
-    with open('white_list', 'w+') as f:
+    with open(conf.WHITE_LIST_FILE, 'w+') as f:
         for name in white_list:
             f.write(name + '\n')
 

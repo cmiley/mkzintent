@@ -4,8 +4,9 @@ from torchviz import make_dot
 import time
 import datetime
 
-from BVHReader import *
-from ModelEvaluationTools import *
+import mkzintent.src.MKZIntentConf as Conf
+from mkzintent.src.BVHReader import *
+from mkzintent.src.ModelEvaluationTools import *
 
 LOSS_TITLE = "Loss Graph"
 ITERATION_TITLE = "Iteration Graph"
@@ -52,6 +53,7 @@ class FeedForwardNet(nn.Module):
 # def m_loss(input, target):
 #     return (target-input)**2
 
+
 def main():
     file_path_list = load_whitelist()[:10]
 
@@ -85,7 +87,7 @@ def main():
     train_eval_loader = data.DataLoader(dataset=train_dataset, batch_size=2**12, shuffle=True, num_workers=4)
 
     plotter = Plotter()
-    model = FeedForwardNet(conf.NN_INPUT_SIZE + 3, conf.NN_OUTPUT_SIZE)
+    model = FeedForwardNet(Conf.NN_INPUT_SIZE + 3, Conf.NN_OUTPUT_SIZE)
     criterion = nn.MSELoss()
     # criterion = m_loss
     initial_lr = 0.008
@@ -95,7 +97,7 @@ def main():
 
     current_avg = 0
 
-    for epoch in range(conf.NUM_EPOCHS):
+    for epoch in range(Conf.NUM_EPOCHS):
         logger.info("Start of epoch {}".format(epoch + 1))
         start = time.time()
         adjust_learning_rate(optimizer, epoch, initial=initial_lr, decay=0.99, interval=20)
@@ -117,7 +119,7 @@ def main():
         logger.info("Time for iteration {}".format(t_delta))
 
         current_avg = ((current_avg*epoch) + t_delta)/(epoch+1)
-        est_end_time = datetime.datetime.now() + datetime.timedelta(seconds=current_avg*(conf.NUM_EPOCHS-epoch))
+        est_end_time = datetime.datetime.now() + datetime.timedelta(seconds=current_avg*(Conf.NUM_EPOCHS-epoch))
 
         logger.info("Estimated time to finish: {}".format(est_end_time))
 
