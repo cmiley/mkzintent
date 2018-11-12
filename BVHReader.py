@@ -139,7 +139,7 @@ class BVHDatasetDeltas(data.Dataset):
 # Returns the modified array.
 def convert_frames_to_float(frames):
     for frame_num in range(len(frames)):
-        frames[frame_num] = map(float, frames[frame_num])
+        frames[frame_num] = list(map(float, frames[frame_num]))
     return frames
 
 

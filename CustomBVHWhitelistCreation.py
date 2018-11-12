@@ -30,9 +30,9 @@ class BVHDataset(data.Dataset):
             num_samples = bvh_data.nframes - (conf.NUM_INVALID_FRAMES + conf.SAMPLE_LOOK_AHEAD)
 
             for file_index in range(conf.NUM_INVALID_FRAMES, num_samples + conf.SAMPLE_LOOK_AHEAD):
-                bvh_data.frames[file_index] = map(float, bvh_data.frames[file_index])
+                bvh_data.frames[file_index] = list(map(float, bvh_data.frames[file_index]))
                 bvh_data.frames[file_index+conf.SAMPLE_LOOK_AHEAD] = \
-                    map(float, bvh_data.frames[file_index+conf.SAMPLE_LOOK_AHEAD])
+                    list(map(float, bvh_data.frames[file_index+conf.SAMPLE_LOOK_AHEAD]))
 
                 pose = np.asarray(bvh_data.frames[file_index][conf.NN_OUTPUT_SIZE:])
                 initial = np.asarray(bvh_data.frames[file_index][:conf.NN_OUTPUT_SIZE])
