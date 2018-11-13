@@ -10,6 +10,6 @@ if __name__ == '__main__':
     if not os.path.exists(Conf.WHITE_LIST_FILE):
         logger.info("Whitelist file not found, creating whitelist...")
         wCreator.main()
-        logger.info("Whitelist generated as " + os.getcwd() + Conf.WHITE_LIST_FILE)
+        logger.info("Whitelist generated as " + os.getcwd() + "/" + Conf.WHITE_LIST_FILE)
     else:
         logger.info("Found whitelist file as " + Conf.WHITE_LIST_FILE)
