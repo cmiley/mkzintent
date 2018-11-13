@@ -10,8 +10,8 @@ import numpy as np
 from torch.autograd import Variable
 from bvh import *
 import os
-import mkzintent.src.ModelEvaluationTools as met
-import mkzintent.src.MKZIntentConf as conf
+import ModelEvaluationTools as met
+import MKZIntentConf as conf
 
 
 logger = met.create_logger("whitelist_logger", conf.WHITE_LIST_LOG)

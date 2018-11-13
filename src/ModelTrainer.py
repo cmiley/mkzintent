@@ -4,9 +4,9 @@ from torchviz import make_dot
 import time
 import datetime
 
-import mkzintent.src.MKZIntentConf as Conf
-from mkzintent.src.BVHReader import *
-from mkzintent.src.ModelEvaluationTools import *
+import MKZIntentConf as Conf
+from BVHReader import *
+from ModelEvaluationTools import *
 
 LOSS_TITLE = "Loss Graph"
 ITERATION_TITLE = "Iteration Graph"

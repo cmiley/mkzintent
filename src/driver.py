@@ -1,6 +1,6 @@
-import mkzintent.src.CustomBVHWhitelistCreation as wCreator
-import mkzintent.src.ModelEvaluationTools as Met
-import mkzintent.src.MKZIntentConf as Conf
+import CustomBVHWhitelistCreation as wCreator
+import ModelEvaluationTools as Met
+import MKZIntentConf as Conf
 import os
 
 if __name__ == '__main__':
