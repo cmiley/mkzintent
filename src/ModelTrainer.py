@@ -1,5 +1,5 @@
 import torch.nn as nn
-from torchviz import make_dot
+# from torchviz import make_dot
 
 import time
 import datetime
@@ -133,7 +133,7 @@ def main():
     test_loss = evaluate_model_on_dataset(model, criterion, test_eval_loader)
     logger.info("Training loss: {}\tTesting loss:{}".format(train_loss, test_loss))
 
-    make_dot(model(Variable(torch.randn(1, 96)).cuda()).mean(), params=dict(model.named_parameters()))
+    # make_dot(model(Variable(torch.randn(1, 96)).cuda()).mean(), params=dict(model.named_parameters()))
 
     plotter.prepare_plots()
     plotter.pickle_plots(directory_name)
